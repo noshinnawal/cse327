@@ -1,0 +1,37 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.elf
+*.hex
+*.bin
+*.map
+*.out
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Toolchain / cross-compiler
+build/
+toolchain/build/
+target/
+
+# QEMU / emulation snapshots
+*.qcow2
+*.vdi
+*.vmdk
+*.snapshot
+
+# Debug / trace artifacts
+*.log
+*.pcap
+traces/
+gdb_history
+
+# OS metadata
+.DS_Store
+Thumbs.db

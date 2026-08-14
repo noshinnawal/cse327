@@ -1,0 +1,12 @@
+CREATE DATABASE IF NOT EXISTS nosh_softdev;
+USE nosh_softdev;
+
+CREATE TABLE IF NOT EXISTS certificates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hash VARCHAR(64) NOT NULL UNIQUE,
+    student_name VARCHAR(255) NOT NULL,
+    degree VARCHAR(255) NOT NULL,
+    institution VARCHAR(255) NOT NULL,
+    issuance_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
