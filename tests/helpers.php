@@ -8,7 +8,8 @@ putenv('DB_PASS=');
 require_once __DIR__ . '/../core.php';
 require_once __DIR__ . '/../auth.php';
 
-function boot_sqlite() {
+function boot_sqlite()
+{
     $pdo = new PDO('sqlite::memory:');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
@@ -16,7 +17,8 @@ function boot_sqlite() {
     return $pdo;
 }
 
-function seed_certificate($pdo, $student_name, $degree, $institution, $issuance_date, $content = 'PDF-CONTENT') {
+function seed_certificate($pdo, $student_name, $degree, $institution, $issuance_date, $content = 'PDF-CONTENT')
+{
     $path = temp_upload($content);
     $hash = pdf_hash($path);
     ledger_insert($pdo, $hash, $student_name, $degree, $institution, $issuance_date);
@@ -24,7 +26,8 @@ function seed_certificate($pdo, $student_name, $degree, $institution, $issuance_
     return $hash;
 }
 
-function temp_upload($content = 'PDF-CONTENT') {
+function temp_upload($content = 'PDF-CONTENT')
+{
     $path = tempnam(sys_get_temp_dir(), 'cert_');
     file_put_contents($path, $content);
     return $path;

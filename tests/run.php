@@ -7,18 +7,21 @@ require __DIR__ . '/helpers.php';
 
 $GLOBALS['__assertions'] = 0;
 
-function fail($message) {
+function fail($message)
+{
     throw new RuntimeException($message);
 }
 
-function assert_true($condition, $label) {
+function assert_true($condition, $label)
+{
     $GLOBALS['__assertions']++;
     if (!$condition) {
         fail("$label — expected truthy, got falsy");
     }
 }
 
-function assert_eq($expected, $actual, $label) {
+function assert_eq($expected, $actual, $label)
+{
     $GLOBALS['__assertions']++;
     if ($expected !== $actual) {
         $exp = var_export($expected, true);
@@ -27,14 +30,16 @@ function assert_eq($expected, $actual, $label) {
     }
 }
 
-function assert_contains($needle, $haystack, $label) {
+function assert_contains($needle, $haystack, $label)
+{
     $GLOBALS['__assertions']++;
     if (strpos($haystack, $needle) === false) {
         fail("$label — expected to contain " . var_export($needle, true));
     }
 }
 
-function assert_throws($fn, $label) {
+function assert_throws($fn, $label)
+{
     $GLOBALS['__assertions']++;
     try {
         $fn();
@@ -61,10 +66,10 @@ foreach ($files as $file) {
 
 $tests = array_values(array_filter(
     get_defined_functions()['user'],
-    fn($fn) => str_starts_with($fn, 'test_')
+    fn ($fn) => str_starts_with($fn, 'test_')
 ));
 
-echo "Running " . count($tests) . " tests from " . count($files) . " files\n";
+echo 'Running ' . count($tests) . ' tests from ' . count($files) . " files\n";
 echo str_repeat('-', 60) . "\n";
 
 $passed = 0;
@@ -78,7 +83,7 @@ foreach ($tests as $test) {
         echo "  \xE2\x9C\x93 $test\n";
     } catch (Throwable $e) {
         $failed++;
-        $failures[] = "$test — {$e->getMessage()} (" . basename($e->getFile()) . ":" . $e->getLine() . ")";
+        $failures[] = "$test — {$e->getMessage()} (" . basename($e->getFile()) . ':' . $e->getLine() . ')';
         echo "  \xE2\x9C\x97 $test — {$e->getMessage()}\n";
     }
 }

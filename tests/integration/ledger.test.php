@@ -2,7 +2,8 @@
 
 require_once __DIR__ . '/../helpers.php';
 
-function test_issue_then_verify_same_pdf() {
+function test_FR03_FR04_issue_then_verify_same_pdf()
+{
     $pdo = boot_sqlite();
     $pdf = temp_upload('FULL-CERTIFICATE-CONTENT');
     $hash = pdf_hash($pdf);
@@ -17,7 +18,8 @@ function test_issue_then_verify_same_pdf() {
     unlink($pdf);
 }
 
-function test_tampered_document_does_not_verify() {
+function test_FR04_tampered_document_does_not_verify()
+{
     $pdo = boot_sqlite();
     $pdf = temp_upload('ORIGINAL-CERTIFICATE');
     $hash = pdf_hash($pdf);
@@ -30,7 +32,8 @@ function test_tampered_document_does_not_verify() {
     unlink($pdf);
 }
 
-function test_duplicate_issuance_rejected() {
+function test_FR03_duplicate_issuance_rejected()
+{
     $pdo = boot_sqlite();
     $pdf = temp_upload('DUPLICATE-CERTIFICATE');
     $hash = pdf_hash($pdf);
@@ -43,7 +46,8 @@ function test_duplicate_issuance_rejected() {
     unlink($pdf);
 }
 
-function test_search_matches_name_and_degree() {
+function test_FR05_search_matches_name_and_degree()
+{
     $pdo = boot_sqlite();
     seed_certificate($pdo, 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-06-01', 'A');
     seed_certificate($pdo, 'Bob Hasan', 'MBA', 'North South University', '2025-12-31', 'B');
@@ -63,7 +67,8 @@ function test_search_matches_name_and_degree() {
     assert_eq(2, count($empty), 'empty query returns all of the institution\'s certificates');
 }
 
-function test_sort_by_name_and_date() {
+function test_FR05_sort_by_name_and_date()
+{
     $pdo = boot_sqlite();
     seed_certificate($pdo, 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-01-01', 'A');
     seed_certificate($pdo, 'Bob Hasan', 'MBA', 'North South University', '2026-02-01', 'B');
@@ -87,7 +92,8 @@ function test_sort_by_name_and_date() {
     assert_eq(3, count($fallback), 'unknown sort value falls back to the default without error');
 }
 
-function test_delete_own_certificate() {
+function test_FR05_delete_own_certificate()
+{
     $pdo = boot_sqlite();
     $hash = seed_certificate($pdo, 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-06-01', 'X');
     $id = $pdo->lastInsertId();
@@ -96,7 +102,8 @@ function test_delete_own_certificate() {
     assert_eq(false, ledger_find_by_hash($pdo, $hash), 'deleted certificate no longer verifies');
 }
 
-function test_cannot_delete_another_institutions_certificate() {
+function test_FR05_cannot_delete_another_institutions_certificate()
+{
     $pdo = boot_sqlite();
     $hash = seed_certificate($pdo, 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-06-01', 'X');
     $id = $pdo->lastInsertId();
@@ -105,7 +112,8 @@ function test_cannot_delete_another_institutions_certificate() {
     assert_true(ledger_find_by_hash($pdo, $hash) !== false, 'certificate remains in the ledger');
 }
 
-function test_reissue_same_pdf_after_delete() {
+function test_FR05_reissue_same_pdf_after_delete()
+{
     $pdo = boot_sqlite();
     $pdf = temp_upload('REISSUED-CERTIFICATE');
     $hash = pdf_hash($pdf);
