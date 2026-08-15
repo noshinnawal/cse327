@@ -6,8 +6,12 @@ on:
 
 jobs:
   lint-and-test:
-    name: Lint + Test
+    name: Lint + Test (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,12 +19,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          extensions: pdo_sqlite
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, mbstring
 
       - name: Lint PHP files
         run: |
-          mapfile -t files < <(find . -name '*.php' -not -path './.git/*')
+          mapfile -t files < <(find . -name '*.php' -not -path './.git/*' -not -path './vendor/*')
           if [ ${#files[@]} -eq 0 ]; then
             echo "No PHP files found"
             exit 0
@@ -30,5 +34,85 @@ jobs:
           done
           echo "All PHP files lint clean"
 
-      - name: Run test suite
+      - name: Run test suite (SQLite, zero-dependency)
         run: php tests/run.php
+
+  static-analysis:
+    name: Static analysis (PHPStan, level 5)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring
+          coverage: none
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHPStan analyse
+        run: vendor/bin/phpstan analyse --no-progress
+
+  code-style:
+    name: Code style (PHP CS Fixer, PSR-12)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring
+          coverage: none
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Check formatting
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+  mysql-integration:
+    name: MySQL integration (real schema semantics)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: nosh_softdev
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Load schema
+        run: |
+          sudo apt-get update && sudo apt-get install -y default-mysql-client
+          mysql -h127.0.0.1 -uroot -proot < schema.sql
+
+      - name: Run MySQL integration suite
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: nosh_softdev
+          DB_USER: root
+          DB_PASS: root
+        run: php tests/run_mysql.php

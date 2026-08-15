@@ -1,12 +1,14 @@
-# Build artifacts
-*.o
-*.a
-*.so
-*.elf
-*.hex
-*.bin
-*.map
-*.out
+# PHP / runtime
+*.log
+
+# Composer (dev tooling)
+/vendor/
+
+# PHPStan cache
+/var/
+
+# PHP CS Fixer cache
+.php-cs-fixer.cache
 
 # IDE / editor
 .vscode/
@@ -15,26 +17,11 @@
 *.swo
 *~
 
-# Toolchain / cross-compiler
-build/
-toolchain/build/
-target/
-
-# QEMU / emulation snapshots
-*.qcow2
-*.vdi
-*.vmdk
-*.snapshot
-
-# Debug / trace artifacts
-*.log
-*.pcap
-traces/
-gdb_history
-
 # OS metadata
 .DS_Store
 Thumbs.db
 
-# Course documents (weekly reports, etc.)
-*.docx
+# Local uploads / temp
+*.tmp
+cert_*
+up_*

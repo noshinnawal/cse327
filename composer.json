@@ -1,0 +1,32 @@
+{
+    "name": "nosh/block327",
+    "description": "Localized academic certificate verification system — SHA-256 hash ledger (vanilla PHP + MySQL)",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-fileinfo": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.40",
+        "phpstan/phpstan": "^1.10"
+    },
+    "scripts": {
+        "test": "@php tests/run.php",
+        "lint": "@php tests/lint.php",
+        "analyse": "@php vendor/bin/phpstan analyse --no-progress",
+        "fix": "@php vendor/bin/php-cs-fixer fix",
+        "check": [
+            "@lint",
+            "@test",
+            "@analyse",
+            "@fix --dry-run --diff"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

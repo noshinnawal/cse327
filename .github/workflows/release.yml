@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build deployment artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create drop-in deployment zip
+        run: |
+          mkdir -p dist
+          zip -r block327.zip . \
+            -x '.git/*' \
+            -x '.github/*' \
+            -x 'vendor/*' \
+            -x 'var/*' \
+            -x 'composer.json' \
+            -x 'composer.lock' \
+            -x 'phpstan.neon' \
+            -x '.php-cs-fixer.php' \
+            -x 'tests/*'
+          echo "Artifact contents:"
+          unzip -l block327.zip | head -30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/block327.zip
+          generate_release_notes: true

@@ -1,0 +1,12 @@
+parameters:
+    level: 5
+    paths:
+        - .
+    excludePaths:
+        - vendor/
+        - var/
+        - .git/
+    tmpDir: var/cache/phpstan
+    # CI uses the baseline so the build stays green while we work through
+    # legacy findings; regenerate with: vendor/bin/phpstan analyse --generate-baseline
+    treatPhpDocTypesAsCertain: false
