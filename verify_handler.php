@@ -1,19 +1,18 @@
 <?php
 header('Content-Type: application/json');
 require 'db.php';
+require 'core.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['certificate']) && $_FILES['certificate']['error'] === UPLOAD_ERR_OK) {
         $tmp_path = $_FILES['certificate']['tmp_name'];
-        $hash = hash_file('sha256', $tmp_path);
+        $hash = pdf_hash($tmp_path);
 
         // Immediately delete the uploaded file
         unlink($tmp_path);
 
         try {
-            $stmt = $pdo->prepare("SELECT id, student_name, degree, institution, issuance_date FROM certificates WHERE hash = ?");
-            $stmt->execute([$hash]);
-            $result = $stmt->fetch();
+            $result = ledger_find_by_hash($pdo, $hash);
 
             if ($result) {
                 echo json_encode([

@@ -1,32 +1,13 @@
 <?php
 require 'auth.php';
 require 'db.php';
+require 'core.php';
 require_login();
 $institution = current_institution();
 
 $q = trim($_GET['q'] ?? '');
 $sort = $_GET['sort'] ?? 'newest';
-$allowed_sort = [
-    'newest' => 'created_at DESC',
-    'oldest' => 'created_at ASC',
-    'name' => 'student_name ASC',
-    'date' => 'issuance_date DESC',
-];
-$order = $allowed_sort[$sort] ?? 'created_at DESC';
-
-$sql = "SELECT id, student_name, degree, issuance_date, created_at, hash FROM certificates WHERE institution = ?";
-$params = [$institution];
-if ($q !== '') {
-    $sql .= " AND (student_name LIKE ? OR degree LIKE ?)";
-    $like = '%' . $q . '%';
-    $params[] = $like;
-    $params[] = $like;
-}
-$sql .= " ORDER BY " . $order;
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$certificates = $stmt->fetchAll();
+$certificates = ledger_search($pdo, $institution, $q, $sort);
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">

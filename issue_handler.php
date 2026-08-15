@@ -1,6 +1,7 @@
 <?php
 require 'auth.php';
 require 'db.php';
+require 'core.php';
 header('Content-Type: application/json');
 
 if (!is_logged_in()) {
@@ -21,11 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $tmp_path = $_FILES['certificate']['tmp_name'];
-        $hash = hash_file('sha256', $tmp_path);
+        $hash = pdf_hash($tmp_path);
 
         try {
-            $stmt = $pdo->prepare("INSERT INTO certificates (hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$hash, $student_name, $degree, $institution, $issuance_date]);
+            ledger_insert($pdo, $hash, $student_name, $degree, $institution, $issuance_date);
 
             // Immediately delete the uploaded file
             unlink($tmp_path);

@@ -14,9 +14,9 @@ Verification (Recruiter / Employer — no login required)
                                                         └──────────────────┘
 
 Issuance (University Registrar — login required)
-  login.php ──► dashboard.php (issue a certificate)
-                └──► view_certs.php (search, sort, and correct mistakes:
-                     deleting a row lets the same PDF be re-issued)
+  register.php ─► (pending) ─► admin approval ─► login.php ─► dashboard.php
+                    └──► view_certs.php (search, sort, and correct mistakes:
+                         deleting a row lets the same PDF be re-issued)
 ```
 
 The uploaded PDF is hashed and immediately deleted — the server never stores the document itself. A certificate's integrity is proven by hash comparison alone.
@@ -26,17 +26,21 @@ The uploaded PDF is hashed and immediately deleted — the server never stores t
 ```
 block327/
 ├── index.php            — Public verification portal (no login required)
-├── login.php            — Institution login (multi-institution)
-├── auth.php             — Session guard + hardcoded institution credentials
+├── login.php            — Institution login (database-backed, active accounts only)
+├── register.php         — Institution self-registration (pending until admin approval)
+├── auth.php             — Session guard + database-backed authentication
 ├── logout.php           — Destroys the session
 ├── dashboard.php        — Protected issuance dashboard
 ├── view_certs.php       — Protected ledger: search, sort, delete
 ├── issue_handler.php    — Backend: hash generation + ledger insertion
 ├── verify_handler.php   — Backend: hash comparison + verification result
 ├── delete_handler.php   — Backend: removes a certificate from the ledger
+├── core.php             — Shared ledger logic (insert/find/delete/search/hash)
 ├── db.php               — PDO MySQL connection (configurable)
-├── schema.sql           — MySQL schema for the `certificates` table
-├── style.css            — Light-theme UI (Inter font, indigo accents)
+├── schema.sql           — MySQL schema: `certificates` + `institutions` tables
+├── style.css            — Light/dark theme UI (Inter font, indigo accents)
+├── tests/               — Automated test suite (zero-dependency, SQLite in-memory)
+├── run_tests.bat        — Double-click test runner
 ├── PLAN.md              — Implementation plan and design decisions
 ├── proposal.pdf         — Original project proposal
 └── .gitignore
@@ -173,12 +177,20 @@ XAMPP for Windows ships with Xdebug pre-installed. To enable step-through debugg
 
 ### Demo login credentials
 
-Credentials are hardcoded in `auth.php` (one password per institution):
+Credentials are stored in the `institutions` table (seeded by `schema.sql`), with bcrypt-hashed passwords:
 
 | Institution | Password |
 |-------------|----------|
 | North South University | `nosh327` |
 | Brac University | `brac327` |
+
+### Register a New Institution
+
+1. Open `login.php` and click **Register your institution**
+2. Enter the institution name, location, email, website, representative name, job title, and a password
+3. The account is created with `pending` status and **cannot log in yet**
+4. To activate it, open the `institutions` table in phpMyAdmin and set `status = 'active'` for the signup you trust (verify their website/email first)
+5. The institution can now log in normally
 
 ### Issue a Certificate
 
@@ -212,9 +224,27 @@ Credentials are hardcoded in `auth.php` (one password per institution):
 
 - The uploaded PDF is **immediately deleted** after hashing — the server never retains the document
 - SHA-256 collision resistance makes it computationally infeasible to produce a different document with the same hash
-- Login uses **hardcoded demo credentials** and session flags only — replace `$institutions` in `auth.php` with a database-backed `users` table (password hashing with `password_hash()` / `password_verify()`) before production use
+- Institution credentials are stored in the `institutions` table with `password_hash()` / `password_verify()` — plaintext is never stored
+- New institutions register with `pending` status and are activated manually via the database, preventing random impersonation of real universities
 - Deleting a certificate is permanent: a deleted certificate shows as "not valid" for future checks, so deletion is intended for correcting issuance mistakes before the certificate reaches the public
 - The system does not authenticate users beyond the session check — add HTTPS and stronger authentication for production use
+
+## Testing
+
+The project ships with a zero-dependency automated test suite (no Composer, no PHPUnit):
+
+| Command | What it does |
+|---------|--------------|
+| `C:\xampp\php\php.exe tests\run.php` | Run all unit + integration tests |
+| `run_tests.bat` | Double-clickable launcher for the same |
+
+The suite covers:
+
+- **Hash behavior** — same file always produces the same hash; a tampered file produces a different hash; output format is 64 hex characters
+- **Authentication** — active institution + correct password logs in; wrong password is rejected; pending accounts cannot log in; unknown institutions return null
+- **Ledger flows** — issue a PDF then verify it as valid; a tampered document is flagged invalid; duplicate issuance is rejected; search and sort (name/degree filters, name/date ordering, unknown-sort fallback); delete only works for the owning institution; the same PDF can be re-issued after deletion
+
+Tests run against a fresh **in-memory SQLite database** (PHP's built-in `pdo_sqlite`), so they never touch your real MySQL ledger and need zero setup — every test starts with a clean database. Exit code is 0 on success and 1 on any failure, so the suite can be wired into CI later.
 
 ## License
 
