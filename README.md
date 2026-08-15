@@ -30,20 +30,25 @@ block327/
 ├── index.php            — Public verification portal (no login required)
 ├── login.php            — Institution login (database-backed, active accounts only)
 ├── register.php         — Institution self-registration (pending until admin approval)
-├── auth.php             — Session guard + database-backed authentication
+├── auth.php             — Session guard + database-backed authentication + brute-force lockout
 ├── logout.php           — Destroys the session
+├── csrf.php             — CSRF token generation and validation
 ├── dashboard.php        — Protected issuance dashboard
 ├── view_certs.php       — Protected ledger: search, sort, delete
 ├── issue_handler.php    — Backend: hash generation + ledger insertion
 ├── verify_handler.php   — Backend: hash comparison + verification result
 ├── delete_handler.php   — Backend: removes a certificate from the ledger
-├── core.php             — Shared ledger logic (insert/find/delete/search/hash)
-├── db.php               — PDO MySQL connection (configurable)
-├── schema.sql           — MySQL schema: `certificates` + `institutions` tables
+├── core.php             — Shared ledger logic + hash strategy + upload validation + audit log
+├── db.php               — Singleton PDO connection (configurable via env vars)
+├── schema.sql           — MySQL schema: `certificates`, `institutions`, `audit_log`
 ├── style.css            — Light/dark theme UI (Inter font, indigo accents)
 ├── tests/               — Automated test suite (zero-dependency, SQLite in-memory)
 ├── run_tests.bat        — Double-click test runner
-├── .github/             — CI workflow (lint + tests) and pull request template
+├── docs/                — Requirements, risk register, design patterns, traceability
+├── .github/             — CI workflow (lint + tests + analysis), PR template, Dependabot
+├── SECURITY.md          — Vulnerability reporting + security posture
+├── CONTRIBUTING.md      — Workflow, Definition of Done, review checklist
+├── CHANGELOG.md         — Version history
 ├── PLAN.md              — Implementation plan and design decisions
 ├── proposal.pdf         — Original project proposal
 └── .gitignore
@@ -83,6 +88,14 @@ mysql -u root < C:\path\to\block327\schema.sql
 > If you created the database with an **older version** of the schema, add the missing column once:
 > ```sql
 > ALTER TABLE certificates ADD COLUMN institution VARCHAR(255) NOT NULL DEFAULT '' AFTER issuance_date;
+> ALTER TABLE institutions ADD COLUMN failed_attempts INT NOT NULL DEFAULT 0, ADD COLUMN locked_until DATETIME DEFAULT NULL;
+> CREATE TABLE audit_log (
+>     id INT AUTO_INCREMENT PRIMARY KEY,
+>     institution VARCHAR(255) DEFAULT NULL,
+>     action ENUM('issue','verify','delete','login','login_failed') NOT NULL,
+>     hash VARCHAR(64) DEFAULT NULL,
+>     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+> );
 > ```
 
 ### 4. Deploy the files
@@ -230,7 +243,14 @@ Credentials are stored in the `institutions` table (seeded by `schema.sql`), wit
 - Institution credentials are stored in the `institutions` table with `password_hash()` / `password_verify()` — plaintext is never stored
 - New institutions register with `pending` status and are activated manually via the database, preventing random impersonation of real universities
 - Deleting a certificate is permanent: a deleted certificate shows as "not valid" for future checks, so deletion is intended for correcting issuance mistakes before the certificate reaches the public
-- The system does not authenticate users beyond the session check — add HTTPS and stronger authentication for production use
+- **CSRF protection**: every state-changing request (login, register, issue, verify, delete) requires a session-bound token (see `csrf.php`)
+- **Upload validation**: server-side `%PDF` magic-byte check and 5 MB cap — the browser's `accept` attribute is not trusted
+- **Stored-XSS defense**: certificate metadata is HTML-escaped before it is rendered in the public verification result
+- **Brute-force lockout**: 5 failed logins lock an account for 15 minutes (`auth.php`)
+- **Session hardening**: HttpOnly + SameSite=Lax cookies, session ID regeneration on login, 30-minute idle timeout
+- **Audit log**: issue/verify/delete/login events are recorded in `audit_log` (never blocks the main flow)
+- **Error hygiene**: database internals are logged server-side, never returned to clients
+- The system does not authenticate users beyond the session check — add HTTPS and stronger authentication for production use (see `SECURITY.md` → Production Hardening Checklist)
 
 ## Testing
 
@@ -240,14 +260,22 @@ The project ships with a zero-dependency automated test suite (no Composer, no P
 |---------|--------------|
 | `C:\xampp\php\php.exe tests\run.php` | Run all unit + integration tests |
 | `run_tests.bat` | Double-clickable launcher for the same |
+| `composer test` | Same suite, via Composer script (if dev tooling installed) |
+| `composer analyse` | PHPStan static analysis |
+| `composer fix` | Auto-format with PHP CS Fixer (PSR-12) |
 
-The suite covers:
+The suite covers (37 tests, requirement-ID named — traceability in `docs/requirements.md`):
 
-- **Hash behavior** — same file always produces the same hash; a tampered file produces a different hash; output format is 64 hex characters
-- **Authentication** — active institution + correct password logs in; wrong password is rejected; pending accounts cannot log in; unknown institutions return null
-- **Ledger flows** — issue a PDF then verify it as valid; a tampered document is flagged invalid; duplicate issuance is rejected; search and sort (name/degree filters, name/date ordering, unknown-sort fallback); delete only works for the owning institution; the same PDF can be re-issued after deletion
+- **NFR-01 hash behavior** — same file always produces the same hash; a tampered file produces a different hash; output format is 64 hex characters
+- **FR-01/02 authentication** — active institution + correct password logs in; wrong password is rejected; pending accounts cannot log in; unknown institutions return null
+- **FR-07 brute-force lockout** — 5 failures lock the account; the lock expires; counters reset on success
+- **FR-03/04/05 ledger flows** — issue a PDF then verify it as valid; a tampered document is flagged invalid; duplicate issuance is rejected; search and sort (name/degree filters, name/date ordering, unknown-sort fallback); delete only works for the owning institution; the same PDF can be re-issued after deletion
+- **FR-08 upload validation** — PDF magic bytes, size cap, boundary values (equivalence partitioning, Lec 15)
+- **FR-09 CSRF** — token stability, format, forged-token rejection
+- **FR-10 / FR-06 XSS + audit** — stored values are escaped before display; audit rows recorded for issue/verify/delete; audit failure never breaks the main flow
+- **NFR-06 handler boot** — every handler loads without a fatal error (guards against missing `require` in the include chain)
 
-Tests run against a fresh **in-memory SQLite database** (PHP's built-in `pdo_sqlite`), so they never touch your real MySQL ledger and need zero setup — every test starts with a clean database. Exit code is 0 on success and 1 on any failure, so the suite can be wired into CI later.
+Tests run against a fresh **in-memory SQLite database** (PHP's built-in `pdo_sqlite`), so they never touch your real MySQL ledger and need zero setup — every test starts with a clean database. Exit code is 0 on success and 1 on any failure, so the suite can be wired into CI (it is — CI also runs the same suite against a real MySQL database).
 
 ## GitHub Workflow (Team)
 

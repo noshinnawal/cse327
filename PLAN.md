@@ -13,33 +13,33 @@ Based on the provided proposal, the goal is to build a locally hosted web-based 
 
 ### Database Layer
 
-#### [NEW] [schema.sql](file:///home/lxrdxe7o/Dev/nosh-softdev/schema.sql)
+#### [NEW] [schema.sql](schema.sql)
 Defines the structure for the certificate ledger. It will contain a `certificates` table storing the SHA-256 hash, student metadata (name, degree, issuance date), and a unique certificate ID.
 
-#### [NEW] [db.php](file:///home/lxrdxe7o/Dev/nosh-softdev/db.php)
+#### [NEW] [db.php](db.php)
 Establishes a secure PDO connection to the database.
 
 ---
 
 ### Backend Logic & Cryptography
 
-#### [NEW] [issue_handler.php](file:///home/lxrdxe7o/Dev/nosh-softdev/issue_handler.php)
+#### [NEW] [issue_handler.php](issue_handler.php)
 Processes form submissions from the issuance dashboard. It will accept a PDF file upload, generate its SHA-256 hash using `hash_file()`, securely insert the hash and metadata into the database using parameterized queries, and immediately delete the uploaded file.
 
-#### [NEW] [verify_handler.php](file:///home/lxrdxe7o/Dev/nosh-softdev/verify_handler.php)
+#### [NEW] [verify_handler.php](verify_handler.php)
 Processes file uploads from the public verification portal. It will generate the SHA-256 hash of the uploaded PDF and query the database to see if a matching hash exists, returning the associated metadata if authentic, or a "Tamper Alert" if not found.
 
 ---
 
 ### Frontend UI (Vanilla HTML5/CSS3)
 
-#### [NEW] [style.css](file:///home/lxrdxe7o/Dev/nosh-softdev/style.css)
+#### [NEW] [style.css](style.css)
 A highly polished, modern, and rich CSS stylesheet to ensure the UI looks premium. It will feature a sleek design, smooth gradients, modern typography (Inter/Roboto), and micro-animations for interactions like file drag-and-drop.
 
-#### [NEW] [index.php](file:///home/lxrdxe7o/Dev/nosh-softdev/index.php)
+#### [NEW] [index.php](index.php)
 The public verification landing page. It will feature a drag-and-drop file interface for recruiters to upload a certificate for immediate validation. It will use AJAX to communicate with `verify_handler.php` without reloading the page.
 
-#### [NEW] [dashboard.php](file:///home/lxrdxe7o/Dev/nosh-softdev/dashboard.php)
+#### [NEW] [dashboard.php](dashboard.php)
 The Institutional Issuance Dashboard. A secure portal for registrars to input student metadata, upload a degree PDF, and register it in the ledger.
 
 ## Verification Plan
