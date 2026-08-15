@@ -7,17 +7,26 @@ if (is_logged_in()) {
 }
 
 $error = '';
+$notice = '';
+if (isset($_GET['registered'])) {
+    $notice = 'Registration submitted. Your institution will be active once approved by an administrator.';
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['institution'] ?? '');
     $password = $_POST['password'] ?? '';
-    $institution = authenticate($name, $password);
-    if ($institution !== null) {
-        $_SESSION['institution'] = $institution;
+    $result = authenticate($name, $password);
+    if ($result === 'pending') {
+        $notice = 'This institution is registered but awaiting admin approval. Please try again later.';
+    } elseif ($result !== null) {
+        $_SESSION['institution'] = $result;
         header('Location: dashboard.php');
         exit;
+    } else {
+        $error = 'Invalid institution name or password. Please try again.';
     }
-    $error = 'Invalid institution name or password. Please try again.';
 }
+
+$institutions = active_institutions();
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -77,12 +86,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
+        <?php if ($notice !== ''): ?>
+            <div class="alert alert-success">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px; vertical-align: middle;">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <?= htmlspecialchars($notice) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (count($institutions) === 0): ?>
+            <div class="empty">
+                <p>No active institutions yet.<br>New institutions register below and are activated after admin approval.</p>
+            </div>
+        <?php else: ?>
         <form method="post" action="login.php">
             <div class="form-group">
                 <label for="institution">Institution</label>
                 <select name="institution" id="institution" class="input" required>
                     <option value="" disabled selected>Select your institution</option>
-                    <?php foreach ($institutions as $name => $password): ?>
+                    <?php foreach ($institutions as $name): ?>
                         <option value="<?= htmlspecialchars($name) ?>"><?= htmlspecialchars($name) ?></option>
                     <?php endforeach; ?>
                 </select>
@@ -102,6 +126,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Sign In
             </button>
         </form>
+        <?php endif; ?>
+
+        <p class="tool-help">
+            <strong>New here?</strong><br>
+            <a href="register.php" class="link">Register your institution</a>
+        </p>
 
         <p class="tool-help">
             <strong>Demo Credentials</strong><br>

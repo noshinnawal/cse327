@@ -35,3 +35,6 @@ gdb_history
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Course documents (weekly reports, etc.)
+*.docx
