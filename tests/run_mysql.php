@@ -15,6 +15,7 @@ require_once __DIR__ . '/helpers.php';
 
 $pdo = new PDO(
     'mysql:host=' . (getenv('DB_HOST') ?: '127.0.0.1')
+    . ';port=' . (getenv('DB_PORT') ?: '3306')
     . ';dbname=' . (getenv('DB_NAME') ?: 'nosh_softdev')
     . ';charset=utf8mb4',
     getenv('DB_USER') ?: 'root',
@@ -90,7 +91,10 @@ ledger_insert($pdo, pdf_hash($sortB), 'Bob Hasan', 'MBA', 'North South Universit
 $byName = ledger_search($pdo, 'North South University', $aliceName, 'name');
 check(count($byName) === 1 && $byName[0]['student_name'] === $aliceName, 'search by name works on MySQL');
 $sorted = ledger_search($pdo, 'North South University', '', 'date');
-check(count($sorted) >= 2 && $sorted[0]['issuance_date'] === '2026-02-01', 'date sort works on MySQL');
+$names = array_column($sorted, 'student_name');
+$alicePos = array_search($aliceName, $names, true);
+$bobPos = array_search('Bob Hasan', $names, true);
+check(count($sorted) >= 2 && $alicePos !== false && $bobPos !== false && $alicePos < $bobPos, 'date sort works on MySQL');
 
 unlink($pdf);
 unlink($sortA);

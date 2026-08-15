@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0.44
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: nosh_softdev
@@ -106,9 +106,11 @@ jobs:
           coverage: none
 
       - name: Load schema
-        run: |
-          sudo apt-get update && sudo apt-get install -y default-mysql-client
-          mysql -h127.0.0.1 -uroot -proot < schema.sql
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASS: root
+        run: php tests/load_schema.php
 
       - name: Run MySQL integration suite
         env:
