@@ -44,8 +44,11 @@ function check($condition, $label)
 echo "MySQL integration suite\n";
 echo str_repeat('-', 60) . "\n";
 
+// Unique content per run so the suite is idempotent (repeatable on a dirty DB).
+$unique = bin2hex(random_bytes(8));
+
 // 1. Real UNIQUE constraint semantics (SQLite and MySQL agree, but prove it).
-$pdf = temp_upload('%PDF-MYSQL-UNIQUE-TEST');
+$pdf = temp_upload('%PDF-MYSQL-UNIQUE-TEST-' . $unique);
 $hash = pdf_hash($pdf);
 ledger_insert($pdo, $hash, 'MySQL Test', 'BSc', 'North South University', '2026-01-01');
 try {
@@ -60,7 +63,9 @@ $found = ledger_find_by_hash($pdo, $hash);
 check($found !== false && $found['student_name'] === 'MySQL Test', 'find_by_hash round-trips on MySQL');
 
 // 3. Delete scoping (institution ownership).
-$id = (int)$pdo->lastInsertId();
+// Use the id from the SELECTed row: PDO::lastInsertId() is reset by any
+// intervening SELECT on MariaDB, so it must never be relied on here.
+$id = (int)$found['id'];
 check(ledger_delete($pdo, $id, 'Brac University') === false, 'cross-institution delete rejected on MySQL');
 check(ledger_delete($pdo, $id, 'North South University') === true, 'owner delete works on MySQL');
 check(ledger_find_by_hash($pdo, $hash) === false, 'deleted certificate no longer verifies on MySQL');
@@ -77,12 +82,13 @@ check($attempts >= 1, 'failed_attempts incremented on MySQL (got ' . $attempts .
 check(authenticate('North South University', 'nosh327') === 'North South University', 'success resets login on MySQL');
 
 // 6. Search + sort behave identically on MySQL.
-$sortA = temp_upload('%PDF-MYSQL-SORT-A');
-$sortB = temp_upload('%PDF-MYSQL-SORT-B');
-ledger_insert($pdo, pdf_hash($sortA), 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-02-01');
+$sortA = temp_upload('%PDF-MYSQL-SORT-A-' . $unique);
+$sortB = temp_upload('%PDF-MYSQL-SORT-B-' . $unique);
+$aliceName = 'Alice Rahman-' . $unique;
+ledger_insert($pdo, pdf_hash($sortA), $aliceName, 'BSc in CSE', 'North South University', '2026-02-01');
 ledger_insert($pdo, pdf_hash($sortB), 'Bob Hasan', 'MBA', 'North South University', '2026-01-01');
-$byName = ledger_search($pdo, 'North South University', 'Alice', 'name');
-check(count($byName) === 1 && $byName[0]['student_name'] === 'Alice Rahman', 'search by name works on MySQL');
+$byName = ledger_search($pdo, 'North South University', $aliceName, 'name');
+check(count($byName) === 1 && $byName[0]['student_name'] === $aliceName, 'search by name works on MySQL');
 $sorted = ledger_search($pdo, 'North South University', '', 'date');
 check(count($sorted) >= 2 && $sorted[0]['issuance_date'] === '2026-02-01', 'date sort works on MySQL');
 
