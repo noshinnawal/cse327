@@ -1,9 +1,9 @@
 <?php
 
 // Route the app's db.php to an in-memory SQLite DB instead of MySQL.
+// DB_USER/DB_PASS are deliberately left intact: tests/run_mysql.php runs in
+// the same process family and needs the real credentials.
 putenv('DB_DSN=sqlite::memory:');
-putenv('DB_USER=');
-putenv('DB_PASS=');
 
 require_once __DIR__ . '/../core.php';
 require_once __DIR__ . '/../auth.php';
