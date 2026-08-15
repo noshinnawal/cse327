@@ -1,9 +1,10 @@
 <?php
-require 'auth.php';
-require 'db.php';
-require 'core.php';
+require_once 'auth.php';
+require_once 'db.php';
+require_once 'core.php';
 require_login();
 $institution = current_institution();
+$pdo = DbConnection::getInstance()->getPdo();
 
 $q = trim($_GET['q'] ?? '');
 $sort = $_GET['sort'] ?? 'newest';
@@ -15,6 +16,7 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Issued Certificates | Block327</title>
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <link rel="stylesheet" href="style.css?v=2.0">
     <script>
         // Prevent flash of wrong theme
@@ -197,7 +199,10 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
             
             const response = await fetch('delete_handler.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                },
                 body: 'id=' + encodeURIComponent(deleteId)
             });
             const data = await response.json();

@@ -21,6 +21,16 @@ CREATE TABLE IF NOT EXISTS institutions (
     rep_name VARCHAR(255) NOT NULL,
     rep_title VARCHAR(255) NOT NULL,
     status ENUM('pending','active') NOT NULL DEFAULT 'pending',
+    failed_attempts INT NOT NULL DEFAULT 0,
+    locked_until DATETIME DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    institution VARCHAR(255) DEFAULT NULL,
+    action ENUM('issue','verify','delete','login','login_failed') NOT NULL,
+    hash VARCHAR(64) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

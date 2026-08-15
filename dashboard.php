@@ -1,5 +1,5 @@
 <?php
-require 'auth.php';
+require_once 'auth.php';
 require_login();
 $institution = current_institution();
 ?>
@@ -9,6 +9,7 @@ $institution = current_institution();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Issuance Dashboard | Block327</title>
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <link rel="stylesheet" href="style.css?v=2.0">
     <script>
         // Prevent flash of wrong theme
@@ -180,6 +181,7 @@ $institution = current_institution();
             try {
                 const response = await fetch('issue_handler.php', {
                     method: 'POST',
+                    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
                     body: formData
                 });
 

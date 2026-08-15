@@ -1,5 +1,7 @@
 <?php
-require 'auth.php';
+require_once 'auth.php';
+
+$pdo = DbConnection::getInstance()->getPdo();
 
 if (is_logged_in()) {
     header('Location: dashboard.php');
@@ -10,33 +12,38 @@ $error = '';
 $submitted = $_POST;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = trim($_POST['name'] ?? '');
-    $location = trim($_POST['location'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $website = trim($_POST['website'] ?? '');
-    $rep_name = trim($_POST['rep_name'] ?? '');
-    $rep_title = trim($_POST['rep_title'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if ($name === '' || $location === '' || $email === '' || $website === '' || $rep_name === '' || $rep_title === '' || $password === '') {
-        $error = 'All fields are required.';
-    } elseif (strlen($password) < 6) {
-        $error = 'Password must be at least 6 characters long.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Please enter a valid email address.';
-    } elseif (!filter_var($website, FILTER_VALIDATE_URL)) {
-        $error = 'Please enter a valid website URL (including https://).';
+    if (!csrf_validate($_POST['csrf'] ?? '')) {
+        $error = 'Session expired. Please try again.';
     } else {
-        try {
-            $stmt = $pdo->prepare("INSERT INTO institutions (name, password_hash, location, email, website, rep_name, rep_title, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')");
-            $stmt->execute([$name, password_hash($password, PASSWORD_BCRYPT), $location, $email, $website, $rep_name, $rep_title]);
-            header('Location: login.php?registered=1');
-            exit;
-        } catch (\PDOException $e) {
-            if ($e->getCode() == 23000) {
-                $error = 'This institution is already registered. Please sign in instead.';
-            } else {
-                $error = 'Database error: ' . $e->getMessage();
+        $name = trim($_POST['name'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $website = trim($_POST['website'] ?? '');
+        $rep_name = trim($_POST['rep_name'] ?? '');
+        $rep_title = trim($_POST['rep_title'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if ($name === '' || $location === '' || $email === '' || $website === '' || $rep_name === '' || $rep_title === '' || $password === '') {
+            $error = 'All fields are required.';
+        } elseif (strlen($password) < 8) {
+            $error = 'Password must be at least 8 characters long.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
+        } elseif (!filter_var($website, FILTER_VALIDATE_URL)) {
+            $error = 'Please enter a valid website URL (including https://).';
+        } else {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO institutions (name, password_hash, location, email, website, rep_name, rep_title, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')");
+                $stmt->execute([$name, password_hash($password, PASSWORD_BCRYPT), $location, $email, $website, $rep_name, $rep_title]);
+                header('Location: login.php?registered=1');
+                exit;
+            } catch (\PDOException $e) {
+                if ($e->getCode() == 23000) {
+                    $error = 'This institution is already registered. Please sign in instead.';
+                } else {
+                    error_log('register.php: ' . $e->getMessage());
+                    $error = 'An internal error occurred. Please try again.';
+                }
             }
         }
     }
@@ -101,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="post" action="register.php">
+            <?= csrf_field() ?>
             <div class="form-group">
                 <label for="name">Institution Name</label>
                 <input type="text" id="name" name="name" class="input" placeholder="e.g., Independent University Bangladesh" value="<?= htmlspecialchars($submitted['name'] ?? '') ?>" required>
@@ -133,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" class="input" placeholder="At least 6 characters" minlength="6" required>
+                <input type="password" id="password" name="password" class="input" placeholder="At least 8 characters" minlength="8" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block">

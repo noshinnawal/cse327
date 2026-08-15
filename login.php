@@ -1,5 +1,5 @@
 <?php
-require 'auth.php';
+require_once 'auth.php';
 
 if (is_logged_in()) {
     header('Location: dashboard.php');
@@ -12,17 +12,25 @@ if (isset($_GET['registered'])) {
     $notice = 'Registration submitted. Your institution will be active once approved by an administrator.';
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = trim($_POST['institution'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $result = authenticate($name, $password);
-    if ($result === 'pending') {
-        $notice = 'This institution is registered but awaiting admin approval. Please try again later.';
-    } elseif ($result !== null) {
-        $_SESSION['institution'] = $result;
-        header('Location: dashboard.php');
-        exit;
+    if (!csrf_validate($_POST['csrf'] ?? '')) {
+        $error = 'Session expired. Please try again.';
     } else {
-        $error = 'Invalid institution name or password. Please try again.';
+        $name = trim($_POST['institution'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $result = authenticate($name, $password);
+        if ($result === 'pending') {
+            $notice = 'This institution is registered but awaiting admin approval. Please try again later.';
+        } elseif ($result === 'locked') {
+            $error = 'Too many failed attempts. This account is locked for 15 minutes.';
+        } elseif ($result !== null) {
+            session_regenerate_id(true);
+            $_SESSION['institution'] = $result;
+            $_SESSION['last_activity'] = time();
+            header('Location: dashboard.php');
+            exit;
+        } else {
+            $error = 'Invalid institution name or password. Please try again.';
+        }
     }
 }
 
@@ -102,6 +110,7 @@ $institutions = active_institutions();
             </div>
         <?php else: ?>
         <form method="post" action="login.php">
+            <?= csrf_field() ?>
             <div class="form-group">
                 <label for="institution">Institution</label>
                 <select name="institution" id="institution" class="input" required>

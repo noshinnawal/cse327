@@ -1,5 +1,5 @@
 <?php
-require 'auth.php';
+require_once 'auth.php';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -7,6 +7,7 @@ require 'auth.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate Verification | Block327</title>
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <link rel="stylesheet" href="style.css?v=2.0">
     <script>
         // Prevent flash of wrong theme
@@ -151,6 +152,7 @@ require 'auth.php';
             try {
                 const response = await fetch('verify_handler.php', {
                     method: 'POST',
+                    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
                     body: formData
                 });
 

@@ -18,6 +18,16 @@ CREATE TABLE institutions (
     rep_name TEXT NOT NULL,
     rep_title TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active')),
+    failed_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT DEFAULT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    institution TEXT,
+    action TEXT NOT NULL CHECK (action IN ('issue', 'verify', 'delete', 'login', 'login_failed')),
+    hash TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
