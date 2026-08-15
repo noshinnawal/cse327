@@ -1,5 +1,7 @@
 # block327 — Localized Academic Certificate Verification System
 
+![CI](https://github.com/noshinnawal/cse327/actions/workflows/ci.yml/badge.svg)
+
 A zero-trust, tamper-proof digital certificate issuance and verification platform. Universities issue certificates by recording their SHA-256 hash in a local MySQL ledger; recruiters verify certificates by re-hashing the PDF and checking the ledger. No cloud, no blockchain, no third-party dependency — just a MySQL database and a vanilla PHP backend.
 
 ## How It Works
@@ -41,6 +43,7 @@ block327/
 ├── style.css            — Light/dark theme UI (Inter font, indigo accents)
 ├── tests/               — Automated test suite (zero-dependency, SQLite in-memory)
 ├── run_tests.bat        — Double-click test runner
+├── .github/             — CI workflow (lint + tests) and pull request template
 ├── PLAN.md              — Implementation plan and design decisions
 ├── proposal.pdf         — Original project proposal
 └── .gitignore
@@ -245,6 +248,19 @@ The suite covers:
 - **Ledger flows** — issue a PDF then verify it as valid; a tampered document is flagged invalid; duplicate issuance is rejected; search and sort (name/degree filters, name/date ordering, unknown-sort fallback); delete only works for the owning institution; the same PDF can be re-issued after deletion
 
 Tests run against a fresh **in-memory SQLite database** (PHP's built-in `pdo_sqlite`), so they never touch your real MySQL ledger and need zero setup — every test starts with a clean database. Exit code is 0 on success and 1 on any failure, so the suite can be wired into CI later.
+
+## GitHub Workflow (Team)
+
+Every change to `main` goes through a reviewed, CI-verified pull request:
+
+1. Create a branch: `git checkout -b feature/short-description`
+2. Commit your work, then push: `git push -u origin feature/short-description`
+3. Open a pull request on GitHub (the template is pre-filled) and assign a teammate as reviewer
+4. **CI runs automatically** on the PR — lint + test suite must pass
+5. A teammate reviews and approves, then merges; the branch is deleted automatically
+6. Back on `main`: `git checkout main && git pull`
+
+`main` is branch-protected: direct pushes are blocked, status checks must pass, and one teammate approval is required. CI runs on every push and every PR — watch the badge above or the **Actions** tab.
 
 ## License
 
