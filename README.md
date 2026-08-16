@@ -9,19 +9,18 @@ A zero-trust, tamper-proof digital certificate issuance and verification platfor
 ```
 Verification (Recruiter / Employer — no login required)
   ┌─────────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-  │ Upload PDF          │────>│ SHA-256 hash     │────>│ Query ledger     │
-  │                     │     │ (PDF discarded)  │     │ → match = valid  │
-  └─────────────────────┘     └──────────────────┘     │ → no match =     │
-                                                        │   not valid      │
+  │ Upload PDF          │────>│ SHA-256 hash     │────>│ Verify blockchain│
+  │                     │     │ (PDF discarded)  │     │ → valid link     │
+  └─────────────────────┘     └──────────────────┘     │ → invalid/revoked│
                                                         └──────────────────┘
 
 Issuance (University Registrar — login required)
   register.php ─► (pending) ─► admin approval ─► login.php ─► dashboard.php
                     └──► view_certs.php (search, sort, and correct mistakes:
-                         deleting a row lets the same PDF be re-issued)
+                         revoking a row marks it invalid while preserving the blockchain)
 ```
 
-The uploaded PDF is hashed and immediately deleted — the server never stores the document itself. A certificate's integrity is proven by hash comparison alone.
+The uploaded PDF is hashed and immediately deleted — the server never stores the document itself. A certificate's integrity is proven by a chronological blockchain of cryptographic hashes linking each record to the previous one.
 
 ## Project Structure
 
@@ -34,10 +33,10 @@ block327/
 ├── logout.php           — Destroys the session
 ├── csrf.php             — CSRF token generation and validation
 ├── dashboard.php        — Protected issuance dashboard
-├── view_certs.php       — Protected ledger: search, sort, delete
+├── view_certs.php       — Protected ledger: search, sort, revoke
 ├── issue_handler.php    — Backend: hash generation + ledger insertion
 ├── verify_handler.php   — Backend: hash comparison + verification result
-├── delete_handler.php   — Backend: removes a certificate from the ledger
+├── delete_handler.php   — Backend: soft-deletes (revokes) a certificate
 ├── core.php             — Shared ledger logic + hash strategy + upload validation + audit log
 ├── db.php               — Singleton PDO connection (configurable via env vars)
 ├── schema.sql           — MySQL schema: `certificates`, `institutions`, `audit_log`
@@ -221,7 +220,7 @@ Credentials are stored in the `institutions` table (seeded by `schema.sql`), wit
 1. From the dashboard, click **View Certificates**
 2. Only the logged-in institution's certificates are listed
 3. Search by student name or degree, and sort by date/name
-4. **Delete** removes the row permanently (with a confirmation dialog) — a deleted certificate no longer verifies, and the same PDF can be re-registered afterwards
+4. **Revoke** marks the row as revoked (with a confirmation dialog) — a revoked certificate no longer verifies, maintaining the cryptographic chain
 
 ### Verify a Certificate
 
@@ -242,8 +241,8 @@ Credentials are stored in the `institutions` table (seeded by `schema.sql`), wit
 - SHA-256 collision resistance makes it computationally infeasible to produce a different document with the same hash
 - Institution credentials are stored in the `institutions` table with `password_hash()` / `password_verify()` — plaintext is never stored
 - New institutions register with `pending` status and are activated manually via the database, preventing random impersonation of real universities
-- Deleting a certificate is permanent: a deleted certificate shows as "not valid" for future checks, so deletion is intended for correcting issuance mistakes before the certificate reaches the public
-- **CSRF protection**: every state-changing request (login, register, issue, verify, delete) requires a session-bound token (see `csrf.php`)
+- Revoking a certificate is permanent: it shows as "revoked" for future checks, correcting issuance mistakes while preserving the blockchain integrity.
+- **CSRF protection**: every state-changing request (login, register, issue, verify, revoke) requires a session-bound token (see `csrf.php`)
 - **Upload validation**: server-side `%PDF` magic-byte check and 5 MB cap — the browser's `accept` attribute is not trusted
 - **Stored-XSS defense**: certificate metadata is HTML-escaped before it is rendered in the public verification result
 - **Brute-force lockout**: 5 failed logins lock an account for 15 minutes (`auth.php`)

@@ -7,14 +7,14 @@ Based on the provided proposal, the goal is to build a locally hosted web-based 
 > [!NOTE]
 > - **Database:** We will proceed exclusively with **MySQL**, using PDO for secure queries.
 > - **Environment:** The project will be structured so it can simply be dropped into the `htdocs` directory of a standard XAMPP installation and work seamlessly.
-> - **Issuance Workflow:** Based on the proposal, the system will accept an uploaded PDF, generate its SHA-256 hash, insert the hash and metadata into the MySQL ledger, and then immediately discard the uploaded PDF from the server to save space and ensure privacy.
+> - **Issuance Workflow:** Based on the proposal, the system will accept an uploaded PDF, generate its SHA-256 hash, link it to the previous record to form a local blockchain, insert the hashes and metadata into the MySQL ledger, and then immediately discard the uploaded PDF from the server to save space and ensure privacy.
 
 ## Proposed Changes
 
 ### Database Layer
 
 #### [NEW] [schema.sql](schema.sql)
-Defines the structure for the certificate ledger. It will contain a `certificates` table storing the SHA-256 hash, student metadata (name, degree, issuance date), and a unique certificate ID.
+Defines the structure for the certificate ledger. It will contain a `certificates` table storing the document hash, previous block hash, record hash, revocation status, student metadata (name, degree, issuance date), and a unique certificate ID.
 
 #### [NEW] [db.php](db.php)
 Establishes a secure PDO connection to the database.
@@ -27,7 +27,7 @@ Establishes a secure PDO connection to the database.
 Processes form submissions from the issuance dashboard. It will accept a PDF file upload, generate its SHA-256 hash using `hash_file()`, securely insert the hash and metadata into the database using parameterized queries, and immediately delete the uploaded file.
 
 #### [NEW] [verify_handler.php](verify_handler.php)
-Processes file uploads from the public verification portal. It will generate the SHA-256 hash of the uploaded PDF and query the database to see if a matching hash exists, returning the associated metadata if authentic, or a "Tamper Alert" if not found.
+Processes file uploads from the public verification portal. It will generate the SHA-256 hash of the uploaded PDF and query the database to verify the blockchain integrity (record hash and previous hash link), returning the associated metadata if authentic, or a "Tamper Alert" if the chain is broken or revoked.
 
 ---
 
