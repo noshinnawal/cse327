@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/noshinnawal/cse327/actions/workflows/ci.yml/badge.svg)
 
-A zero-trust, tamper-proof digital certificate issuance and verification platform. Universities issue certificates by recording their SHA-256 hash in a local MySQL ledger; recruiters verify certificates by re-hashing the PDF and checking the ledger. No cloud, no blockchain, no third-party dependency — just a MySQL database and a vanilla PHP backend.
+A zero-trust, tamper-proof digital certificate issuance and verification platform. Universities issue certificates by recording their SHA-256 hash in a local MySQL ledger; recruiters verify certificates by re-hashing the PDF and checking the ledger. No cloud, no third-party dependency — just a MySQL database and a vanilla PHP backend.
 
 ## How It Works
 
