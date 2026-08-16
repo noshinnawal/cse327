@@ -25,7 +25,7 @@ if (!csrf_validate($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
 $id = (int) $_POST['id'];
 
 try {
-    $stmt = $pdo->prepare('SELECT hash FROM certificates WHERE id = ? AND institution = ?');
+    $stmt = $pdo->prepare('SELECT document_hash FROM certificates WHERE id = ? AND institution = ?');
     $stmt->execute([$id, current_institution()]);
     $document_hash = $stmt->fetchColumn();
 
