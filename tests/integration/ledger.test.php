@@ -165,3 +165,28 @@ function test_blockchain_linking_on_insert()
     ]));
     assert_eq($expected_rec2, $found2['record_hash'], 'second block record hash is correct');
 }
+
+function test_FR04_blockchain_verification_checks_chain_integrity()
+{
+    $pdo = boot_sqlite();
+    // 1. Setup a valid chain of 3 blocks
+    $hash1 = pdf_hash(temp_upload('CERT1'));
+    $hash2 = pdf_hash(temp_upload('CERT2'));
+    $hash3 = pdf_hash(temp_upload('CERT3'));
+
+    ledger_insert($pdo, $hash1, 'Student 1', 'Deg 1', 'Inst', '2026-01-01');
+    ledger_insert($pdo, $hash2, 'Student 2', 'Deg 2', 'Inst', '2026-01-02');
+    ledger_insert($pdo, $hash3, 'Student 3', 'Deg 3', 'Inst', '2026-01-03');
+
+    // 2. Verify middle block works normally
+    $found2 = ledger_find_by_document_hash($pdo, $hash2);
+    assert_true($found2 !== false, 'middle block verifies normally');
+
+    // 3. Tamper with the database to break the chain
+    // (We change the metadata of the genesis block without updating its record_hash or subsequent previous_hash)
+    $pdo->exec("UPDATE certificates SET degree = 'Hacked Degree' WHERE document_hash = '$hash1'");
+
+    // 4. Verify should now fail (blockchain integrity broken)
+    $found2_after_hack = ledger_find_by_document_hash($pdo, $hash2);
+    assert_eq(false, $found2_after_hack, 'middle block fails verification because a previous block was tampered with');
+}

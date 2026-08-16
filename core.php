@@ -125,9 +125,32 @@ function ledger_insert($pdo, $document_hash, $student_name, $degree, $institutio
 
 function ledger_find_by_document_hash($pdo, $document_hash)
 {
-    $stmt = $pdo->prepare('SELECT id, document_hash, previous_hash, record_hash, is_revoked, student_name, degree, institution, issuance_date FROM certificates WHERE document_hash = ?');
-    $stmt->execute([$document_hash]);
-    return $stmt->fetch();
+    $stmt = $pdo->query('SELECT * FROM certificates ORDER BY id ASC');
+    $expected_previous_hash = null;
+    
+    while ($row = $stmt->fetch()) {
+        $payload = json_encode([
+            'document_hash' => $row['document_hash'],
+            'previous_hash' => $expected_previous_hash,
+            'student_name' => $row['student_name'],
+            'degree' => $row['degree'],
+            'institution' => $row['institution'],
+            'issuance_date' => $row['issuance_date'],
+        ]);
+        $expected_record_hash = hash('sha256', $payload);
+
+        if ($expected_record_hash !== $row['record_hash']) {
+            return false; // Chain is broken
+        }
+
+        if ($row['document_hash'] === $document_hash) {
+            return $row; // Found the requested document in a valid chain
+        }
+
+        $expected_previous_hash = $row['record_hash'];
+    }
+
+    return false;
 }
 
 function ledger_delete($pdo, $id, $institution)
