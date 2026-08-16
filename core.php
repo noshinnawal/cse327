@@ -90,17 +90,19 @@ function certificate_present(array $row): array
     ];
 }
 
-function ledger_insert($pdo, $hash, $student_name, $degree, $institution, $issuance_date)
+function ledger_insert($pdo, $document_hash, $student_name, $degree, $institution, $issuance_date)
 {
-    $stmt = $pdo->prepare('INSERT INTO certificates (hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?)');
-    $stmt->execute([$hash, $student_name, $degree, $institution, $issuance_date]);
-    return $hash;
+    $previous_hash = 'dummy_prev_hash';
+    $record_hash = 'dummy_record_hash';
+    $stmt = $pdo->prepare('INSERT INTO certificates (document_hash, previous_hash, record_hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$document_hash, $previous_hash, $record_hash, $student_name, $degree, $institution, $issuance_date]);
+    return $record_hash;
 }
 
-function ledger_find_by_hash($pdo, $hash)
+function ledger_find_by_document_hash($pdo, $document_hash)
 {
-    $stmt = $pdo->prepare('SELECT id, student_name, degree, institution, issuance_date FROM certificates WHERE hash = ?');
-    $stmt->execute([$hash]);
+    $stmt = $pdo->prepare('SELECT id, document_hash, previous_hash, record_hash, is_revoked, student_name, degree, institution, issuance_date FROM certificates WHERE document_hash = ?');
+    $stmt->execute([$document_hash]);
     return $stmt->fetch();
 }
 
@@ -121,7 +123,7 @@ function ledger_search($pdo, $institution, $q = '', $sort = 'newest')
     ];
     $order = $allowed_sort[$sort] ?? 'created_at DESC';
 
-    $sql = 'SELECT id, student_name, degree, issuance_date, created_at, hash FROM certificates WHERE institution = ?';
+    $sql = 'SELECT id, student_name, degree, issuance_date, created_at, document_hash FROM certificates WHERE institution = ?';
     $params = [$institution];
     if ($q !== '') {
         $sql .= ' AND (student_name LIKE ? OR degree LIKE ?)';
@@ -142,11 +144,11 @@ function ledger_search($pdo, $institution, $q = '', $sort = 'newest')
  * Deliberately non-fatal: if logging fails (e.g., an unmigrated database),
  * the main flow must continue unaffected. Returns true on success.
  */
-function audit_log($pdo, $institution, $action, $hash = null)
+function audit_log($pdo, $institution, $action, $document_hash = null)
 {
     try {
-        $stmt = $pdo->prepare('INSERT INTO audit_log (institution, action, hash) VALUES (?, ?, ?)');
-        $stmt->execute([$institution, $action, $hash]);
+        $stmt = $pdo->prepare('INSERT INTO audit_log (institution, action, document_hash) VALUES (?, ?, ?)');
+        $stmt->execute([$institution, $action, $document_hash]);
         return true;
     } catch (\PDOException $e) {
         error_log('audit_log: ' . $e->getMessage());

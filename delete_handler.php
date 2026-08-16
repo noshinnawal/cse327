@@ -27,10 +27,10 @@ $id = (int) $_POST['id'];
 try {
     $stmt = $pdo->prepare('SELECT hash FROM certificates WHERE id = ? AND institution = ?');
     $stmt->execute([$id, current_institution()]);
-    $hash = $stmt->fetchColumn();
+    $document_hash = $stmt->fetchColumn();
 
     if (ledger_delete($pdo, $id, current_institution())) {
-        audit_log($pdo, current_institution(), 'delete', $hash ?: null);
+        audit_log($pdo, current_institution(), 'delete', $document_hash ?: null);
         echo json_encode(['status' => 'success', 'message' => 'Certificate deleted from the ledger.']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Certificate not found or owned by another institution.']);

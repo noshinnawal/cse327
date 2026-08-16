@@ -123,7 +123,7 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
                                 <td class="strong"><?= htmlspecialchars($cert['student_name']) ?></td>
                                 <td><?= htmlspecialchars($cert['degree']) ?></td>
                                 <td><?= htmlspecialchars($cert['issuance_date']) ?></td>
-                                <td><span class="mono"><?= htmlspecialchars(substr($cert['hash'], 0, 16)) ?>…</span></td>
+                                <td><span class="mono"><?= htmlspecialchars(substr($cert['document_hash'], 0, 16)) ?>…</span></td>
                                 <td class="actions-cell">
                                     <button type="button" class="btn btn-danger sm delete-btn" data-id="<?= (int)$cert['id'] ?>">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

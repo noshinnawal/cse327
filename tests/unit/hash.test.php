@@ -23,8 +23,8 @@ function test_NFR01_hash_different_content_different_hash()
 function test_NFR01_hash_is_64_hex_chars()
 {
     $path = temp_upload('hello');
-    $hash = pdf_hash($path);
-    assert_eq(64, strlen($hash), 'sha-256 output is 64 characters');
-    assert_true(ctype_xdigit($hash), 'sha-256 output is hexadecimal');
+    $document_hash = pdf_hash($path);
+    assert_eq(64, strlen($document_hash), 'sha-256 output is 64 characters');
+    assert_true(ctype_xdigit($document_hash), 'sha-256 output is hexadecimal');
     unlink($path);
 }
