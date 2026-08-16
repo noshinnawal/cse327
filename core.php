@@ -92,11 +92,35 @@ function certificate_present(array $row): array
 
 function ledger_insert($pdo, $document_hash, $student_name, $degree, $institution, $issuance_date)
 {
-    $previous_hash = 'dummy_prev_hash';
-    $record_hash = 'dummy_record_hash';
-    $stmt = $pdo->prepare('INSERT INTO certificates (document_hash, previous_hash, record_hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    $stmt->execute([$document_hash, $previous_hash, $record_hash, $student_name, $degree, $institution, $issuance_date]);
-    return $record_hash;
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Get previous record_hash
+        $stmt = $pdo->query('SELECT record_hash FROM certificates ORDER BY id DESC LIMIT 1');
+        $last_row = $stmt->fetch();
+        $previous_hash = $last_row ? $last_row['record_hash'] : null;
+
+        // 2. Calculate new record_hash
+        $payload = json_encode([
+            'document_hash' => $document_hash,
+            'previous_hash' => $previous_hash,
+            'student_name' => $student_name,
+            'degree' => $degree,
+            'institution' => $institution,
+            'issuance_date' => $issuance_date,
+        ]);
+        $record_hash = hash('sha256', $payload);
+
+        // 3. Insert
+        $stmt = $pdo->prepare('INSERT INTO certificates (document_hash, previous_hash, record_hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$document_hash, $previous_hash, $record_hash, $student_name, $degree, $institution, $issuance_date]);
+        
+        $pdo->commit();
+        return $record_hash;
+    } catch (\Exception $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 }
 
 function ledger_find_by_document_hash($pdo, $document_hash)

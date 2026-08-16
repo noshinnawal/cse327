@@ -50,5 +50,13 @@ function test_FR06_audit_log_never_breaks_the_main_flow()
     // No audit_log table in this database — audit must fail silently.
     $document_hash = pdf_hash(temp_upload('X'));
     assert_eq(false, audit_log($pdo, 'X', 'issue', $document_hash), 'audit_log returns false when the table is missing');
-    assert_eq('dummy_record_hash', ledger_insert($pdo, $document_hash, 'A', 'B', 'C', '2026-01-01'), 'the main ledger flow still works');
+    $expected_hash = hash('sha256', json_encode([
+        'document_hash' => $document_hash,
+        'previous_hash' => null,
+        'student_name' => 'A',
+        'degree' => 'B',
+        'institution' => 'C',
+        'issuance_date' => '2026-01-01',
+    ]));
+    assert_eq($expected_hash, ledger_insert($pdo, $document_hash, 'A', 'B', 'C', '2026-01-01'), 'the main ledger flow still works');
 }

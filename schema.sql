@@ -4,7 +4,7 @@ USE nosh_softdev;
 CREATE TABLE IF NOT EXISTS certificates (
     id INT AUTO_INCREMENT PRIMARY KEY,
     document_hash VARCHAR(64) NOT NULL UNIQUE,
-    previous_hash VARCHAR(64) DEFAULT NULL,
+    previous_hash VARCHAR(64) DEFAULT NULL UNIQUE,
     record_hash VARCHAR(64) NOT NULL,
     is_revoked BOOLEAN NOT NULL DEFAULT 0,
     student_name VARCHAR(255) NOT NULL,

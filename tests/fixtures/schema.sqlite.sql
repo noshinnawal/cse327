@@ -1,7 +1,7 @@
 CREATE TABLE certificates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     document_hash TEXT NOT NULL UNIQUE,
-    previous_hash TEXT DEFAULT NULL,
+    previous_hash TEXT DEFAULT NULL UNIQUE,
     record_hash TEXT NOT NULL,
     is_revoked INTEGER NOT NULL DEFAULT 0,
     student_name TEXT NOT NULL,

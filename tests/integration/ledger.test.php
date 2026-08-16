@@ -12,6 +12,10 @@ function test_FR03_FR04_issue_then_verify_same_pdf()
 
     $found = ledger_find_by_document_hash($pdo, $doc_hash);
     assert_true($found !== false, 'issued certificate is found by its document hash');
+    assert_eq('Alice Rahman', $found['student_name'], 'student name round-trips');
+    assert_eq('BSc in CSE', $found['degree'], 'degree round-trips');
+    assert_eq('North South University', $found['institution'], 'institution round-trips');
+    assert_eq('2026-06-01', $found['issuance_date'], 'issuance date round-trips');
     assert_true(array_key_exists('previous_hash', $found), 'schema includes previous_hash');
     assert_true(array_key_exists('record_hash', $found), 'schema includes record_hash');
     assert_true(array_key_exists('is_revoked', $found), 'schema includes is_revoked');
@@ -125,4 +129,39 @@ function test_FR05_reissue_same_pdf_after_delete()
     ledger_insert($pdo, $document_hash, 'Dan Karim', 'MSc', 'North South University', '2026-05-05');
     assert_true(ledger_find_by_document_hash($pdo, $document_hash) !== false, 'same PDF can be re-issued after deletion');
     unlink($pdf);
+}
+
+function test_blockchain_linking_on_insert()
+{
+    $pdo = boot_sqlite();
+    $hash1 = pdf_hash(temp_upload('CERT1'));
+    $hash2 = pdf_hash(temp_upload('CERT2'));
+
+    // First block (Genesis)
+    $record_hash1 = ledger_insert($pdo, $hash1, 'Student 1', 'Deg 1', 'Inst', '2026-01-01');
+    $found1 = ledger_find_by_document_hash($pdo, $hash1);
+    assert_eq(null, $found1['previous_hash'], 'genesis block has no previous hash');
+    $expected_rec1 = hash('sha256', json_encode([
+        'document_hash' => $hash1,
+        'previous_hash' => null,
+        'student_name' => 'Student 1',
+        'degree' => 'Deg 1',
+        'institution' => 'Inst',
+        'issuance_date' => '2026-01-01',
+    ]));
+    assert_eq($expected_rec1, $found1['record_hash'], 'record hash mathematically verified');
+
+    // Second block
+    $record_hash2 = ledger_insert($pdo, $hash2, 'Student 2', 'Deg 2', 'Inst', '2026-01-02');
+    $found2 = ledger_find_by_document_hash($pdo, $hash2);
+    assert_eq($record_hash1, $found2['previous_hash'], 'second block points to first block');
+    $expected_rec2 = hash('sha256', json_encode([
+        'document_hash' => $hash2,
+        'previous_hash' => $record_hash1,
+        'student_name' => 'Student 2',
+        'degree' => 'Deg 2',
+        'institution' => 'Inst',
+        'issuance_date' => '2026-01-02',
+    ]));
+    assert_eq($expected_rec2, $found2['record_hash'], 'second block record hash is correct');
 }
