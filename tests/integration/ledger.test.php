@@ -102,8 +102,9 @@ function test_FR05_delete_own_certificate()
     $document_hash = seed_certificate($pdo, 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-06-01', 'X');
     $id = $pdo->lastInsertId();
 
-    assert_true(ledger_delete($pdo, $id, 'North South University'), 'owner can delete its certificate');
-    assert_eq(false, ledger_find_by_document_hash($pdo, $document_hash), 'deleted certificate no longer verifies');
+    assert_true(ledger_revoke($pdo, $id, 'North South University'), 'owner can revoke its certificate');
+    $result = ledger_find_by_document_hash($pdo, $document_hash);
+    assert_eq(1, $result['is_revoked'], 'revoked certificate is marked as revoked in verification');
 }
 
 function test_FR05_cannot_delete_another_institutions_certificate()
@@ -112,7 +113,7 @@ function test_FR05_cannot_delete_another_institutions_certificate()
     $document_hash = seed_certificate($pdo, 'Alice Rahman', 'BSc in CSE', 'North South University', '2026-06-01', 'X');
     $id = $pdo->lastInsertId();
 
-    assert_eq(false, ledger_delete($pdo, $id, 'Brac University'), 'another institution cannot delete the certificate');
+    assert_eq(false, ledger_revoke($pdo, $id, 'Brac University'), 'another institution cannot delete the certificate');
     assert_true(ledger_find_by_document_hash($pdo, $document_hash) !== false, 'certificate remains in the ledger');
 }
 
@@ -124,10 +125,11 @@ function test_FR05_reissue_same_pdf_after_delete()
 
     ledger_insert($pdo, $document_hash, 'Dan Karim', 'MSc', 'North South University', '2026-05-05');
     $id = $pdo->lastInsertId();
-    assert_true(ledger_delete($pdo, $id, 'North South University'), 'certificate is deleted');
+    assert_true(ledger_revoke($pdo, $id, 'North South University'), 'certificate is deleted');
 
     ledger_insert($pdo, $document_hash, 'Dan Karim', 'MSc', 'North South University', '2026-05-05');
-    assert_true(ledger_find_by_document_hash($pdo, $document_hash) !== false, 'same PDF can be re-issued after deletion');
+    $result = ledger_find_by_document_hash($pdo, $document_hash);
+    assert_eq(0, $result['is_revoked'], 're-issued certificate is active');
     unlink($pdf);
 }
 
@@ -170,13 +172,9 @@ function test_FR04_blockchain_verification_checks_chain_integrity()
 {
     $pdo = boot_sqlite();
     // 1. Setup a valid chain of 3 blocks
-    $hash1 = pdf_hash(temp_upload('CERT1'));
-    $hash2 = pdf_hash(temp_upload('CERT2'));
-    $hash3 = pdf_hash(temp_upload('CERT3'));
-
-    ledger_insert($pdo, $hash1, 'Student 1', 'Deg 1', 'Inst', '2026-01-01');
-    ledger_insert($pdo, $hash2, 'Student 2', 'Deg 2', 'Inst', '2026-01-02');
-    ledger_insert($pdo, $hash3, 'Student 3', 'Deg 3', 'Inst', '2026-01-03');
+    $hash1 = seed_certificate($pdo, 'Student 1', 'Deg 1', 'Inst', '2026-01-01', 'CERT1');
+    $hash2 = seed_certificate($pdo, 'Student 2', 'Deg 2', 'Inst', '2026-01-02', 'CERT2');
+    $hash3 = seed_certificate($pdo, 'Student 3', 'Deg 3', 'Inst', '2026-01-03', 'CERT3');
 
     // 2. Verify middle block works normally
     $found2 = ledger_find_by_document_hash($pdo, $hash2);
@@ -184,7 +182,8 @@ function test_FR04_blockchain_verification_checks_chain_integrity()
 
     // 3. Tamper with the database to break the chain
     // (We change the metadata of the genesis block without updating its record_hash or subsequent previous_hash)
-    $pdo->exec("UPDATE certificates SET degree = 'Hacked Degree' WHERE document_hash = '$hash1'");
+    $stmt = $pdo->prepare("UPDATE certificates SET degree = 'Hacked Degree' WHERE document_hash = ?");
+    $stmt->execute([$hash1]);
 
     // 4. Verify should now fail (blockchain integrity broken)
     $found2_after_hack = ledger_find_by_document_hash($pdo, $hash2);

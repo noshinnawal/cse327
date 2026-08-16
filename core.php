@@ -95,6 +95,12 @@ function ledger_insert($pdo, $document_hash, $student_name, $degree, $institutio
     try {
         $pdo->beginTransaction();
 
+        $check = $pdo->prepare('SELECT id FROM certificates WHERE document_hash = ? AND is_revoked = 0 LIMIT 1');
+        $check->execute([$document_hash]);
+        if ($check->fetch()) {
+            throw new \PDOException('Duplicate entry', 23000);
+        }
+
         // 1. Get previous record_hash
         $stmt = $pdo->query('SELECT record_hash FROM certificates ORDER BY id DESC LIMIT 1');
         $last_row = $stmt->fetch();
@@ -125,7 +131,17 @@ function ledger_insert($pdo, $document_hash, $student_name, $degree, $institutio
 
 function ledger_find_by_document_hash($pdo, $document_hash)
 {
-    $stmt = $pdo->query('SELECT * FROM certificates ORDER BY id ASC');
+    $stmt = $pdo->prepare('SELECT id FROM certificates WHERE document_hash = ? ORDER BY id DESC LIMIT 1');
+    $stmt->execute([$document_hash]);
+    $target = $stmt->fetch();
+
+    if (!$target) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare('SELECT * FROM certificates WHERE id <= ? ORDER BY id ASC');
+    $stmt->execute([$target['id']]);
+    
     $expected_previous_hash = null;
     
     while ($row = $stmt->fetch()) {
@@ -143,7 +159,7 @@ function ledger_find_by_document_hash($pdo, $document_hash)
             return false; // Chain is broken
         }
 
-        if ($row['document_hash'] === $document_hash) {
+        if ($row['id'] === $target['id']) {
             return $row; // Found the requested document in a valid chain
         }
 
@@ -153,9 +169,9 @@ function ledger_find_by_document_hash($pdo, $document_hash)
     return false;
 }
 
-function ledger_delete($pdo, $id, $institution)
+function ledger_revoke($pdo, $id, $institution)
 {
-    $stmt = $pdo->prepare('DELETE FROM certificates WHERE id = ? AND institution = ?');
+    $stmt = $pdo->prepare('UPDATE certificates SET is_revoked = 1 WHERE id = ? AND institution = ?');
     $stmt->execute([$id, $institution]);
     return $stmt->rowCount() > 0;
 }
@@ -170,7 +186,7 @@ function ledger_search($pdo, $institution, $q = '', $sort = 'newest')
     ];
     $order = $allowed_sort[$sort] ?? 'created_at DESC';
 
-    $sql = 'SELECT id, student_name, degree, issuance_date, created_at, document_hash FROM certificates WHERE institution = ?';
+    $sql = 'SELECT id, student_name, degree, issuance_date, created_at, document_hash, is_revoked FROM certificates WHERE institution = ?';
     $params = [$institution];
     if ($q !== '') {
         $sql .= ' AND (student_name LIKE ? OR degree LIKE ?)';

@@ -26,19 +26,19 @@ function test_FR06_audit_log_records_issue()
     assert_eq('North South University', $rows[0]['institution'], 'audit row carries the issuing institution');
 }
 
-function test_FR06_audit_log_records_verify_and_delete()
+function test_FR06_audit_log_records_verify_and_revoke()
 {
     $pdo = boot_sqlite();
     $document_hash = seed_certificate($pdo, 'Bob Hasan', 'MBA', 'Brac University', '2025-12-31');
     $id = $pdo->lastInsertId();
 
     assert_true(audit_log($pdo, null, 'verify', $document_hash), 'verify audit write succeeds');
-    assert_true(ledger_delete($pdo, $id, 'Brac University'), 'certificate deleted');
-    assert_true(audit_log($pdo, 'Brac University', 'delete', $document_hash), 'delete audit write succeeds');
+    assert_true(ledger_revoke($pdo, $id, 'Brac University'), 'certificate revoked');
+    assert_true(audit_log($pdo, 'Brac University', 'revoke', $document_hash), 'revoke audit write succeeds');
 
     $actions = array_column($pdo->query('SELECT action FROM audit_log')->fetchAll(), 'action');
     assert_true(in_array('verify', $actions, true), 'audit contains the verify action');
-    assert_true(in_array('delete', $actions, true), 'audit contains the delete action');
+    assert_true(in_array('revoke', $actions, true), 'audit contains the revoke action');
 }
 
 function test_FR06_audit_log_never_breaks_the_main_flow()
