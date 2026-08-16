@@ -90,23 +90,88 @@ function certificate_present(array $row): array
     ];
 }
 
-function ledger_insert($pdo, $hash, $student_name, $degree, $institution, $issuance_date)
+function ledger_insert($pdo, $document_hash, $student_name, $degree, $institution, $issuance_date)
 {
-    $stmt = $pdo->prepare('INSERT INTO certificates (hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?)');
-    $stmt->execute([$hash, $student_name, $degree, $institution, $issuance_date]);
-    return $hash;
+    try {
+        $pdo->beginTransaction();
+
+        $check = $pdo->prepare('SELECT id FROM certificates WHERE document_hash = ? AND is_revoked = 0 LIMIT 1');
+        $check->execute([$document_hash]);
+        if ($check->fetch()) {
+            throw new \PDOException('Duplicate entry', 23000);
+        }
+
+        // 1. Get previous record_hash
+        $stmt = $pdo->query('SELECT record_hash FROM certificates ORDER BY id DESC LIMIT 1');
+        $last_row = $stmt->fetch();
+        $previous_hash = $last_row ? $last_row['record_hash'] : null;
+
+        // 2. Calculate new record_hash
+        $payload = json_encode([
+            'document_hash' => $document_hash,
+            'previous_hash' => $previous_hash,
+            'student_name' => $student_name,
+            'degree' => $degree,
+            'institution' => $institution,
+            'issuance_date' => $issuance_date,
+        ]);
+        $record_hash = hash('sha256', $payload);
+
+        // 3. Insert
+        $stmt = $pdo->prepare('INSERT INTO certificates (document_hash, previous_hash, record_hash, student_name, degree, institution, issuance_date) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$document_hash, $previous_hash, $record_hash, $student_name, $degree, $institution, $issuance_date]);
+        
+        $pdo->commit();
+        return $record_hash;
+    } catch (\Exception $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 }
 
-function ledger_find_by_hash($pdo, $hash)
+function ledger_find_by_document_hash($pdo, $document_hash)
 {
-    $stmt = $pdo->prepare('SELECT id, student_name, degree, institution, issuance_date FROM certificates WHERE hash = ?');
-    $stmt->execute([$hash]);
-    return $stmt->fetch();
+    $stmt = $pdo->prepare('SELECT id FROM certificates WHERE document_hash = ? ORDER BY id DESC LIMIT 1');
+    $stmt->execute([$document_hash]);
+    $target = $stmt->fetch();
+
+    if (!$target) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare('SELECT * FROM certificates WHERE id <= ? ORDER BY id ASC');
+    $stmt->execute([$target['id']]);
+    
+    $expected_previous_hash = null;
+    
+    while ($row = $stmt->fetch()) {
+        $payload = json_encode([
+            'document_hash' => $row['document_hash'],
+            'previous_hash' => $expected_previous_hash,
+            'student_name' => $row['student_name'],
+            'degree' => $row['degree'],
+            'institution' => $row['institution'],
+            'issuance_date' => $row['issuance_date'],
+        ]);
+        $expected_record_hash = hash('sha256', $payload);
+
+        if ($expected_record_hash !== $row['record_hash']) {
+            return false; // Chain is broken
+        }
+
+        if ($row['id'] === $target['id']) {
+            return $row; // Found the requested document in a valid chain
+        }
+
+        $expected_previous_hash = $row['record_hash'];
+    }
+
+    return false;
 }
 
-function ledger_delete($pdo, $id, $institution)
+function ledger_revoke($pdo, $id, $institution)
 {
-    $stmt = $pdo->prepare('DELETE FROM certificates WHERE id = ? AND institution = ?');
+    $stmt = $pdo->prepare('UPDATE certificates SET is_revoked = 1 WHERE id = ? AND institution = ?');
     $stmt->execute([$id, $institution]);
     return $stmt->rowCount() > 0;
 }
@@ -121,7 +186,7 @@ function ledger_search($pdo, $institution, $q = '', $sort = 'newest')
     ];
     $order = $allowed_sort[$sort] ?? 'created_at DESC';
 
-    $sql = 'SELECT id, student_name, degree, issuance_date, created_at, hash FROM certificates WHERE institution = ?';
+    $sql = 'SELECT id, student_name, degree, issuance_date, created_at, document_hash, is_revoked FROM certificates WHERE institution = ?';
     $params = [$institution];
     if ($q !== '') {
         $sql .= ' AND (student_name LIKE ? OR degree LIKE ?)';
@@ -142,11 +207,11 @@ function ledger_search($pdo, $institution, $q = '', $sort = 'newest')
  * Deliberately non-fatal: if logging fails (e.g., an unmigrated database),
  * the main flow must continue unaffected. Returns true on success.
  */
-function audit_log($pdo, $institution, $action, $hash = null)
+function audit_log($pdo, $institution, $action, $document_hash = null)
 {
     try {
-        $stmt = $pdo->prepare('INSERT INTO audit_log (institution, action, hash) VALUES (?, ?, ?)');
-        $stmt->execute([$institution, $action, $hash]);
+        $stmt = $pdo->prepare('INSERT INTO audit_log (institution, action, document_hash) VALUES (?, ?, ?)');
+        $stmt->execute([$institution, $action, $document_hash]);
         return true;
     } catch (\PDOException $e) {
         error_log('audit_log: ' . $e->getMessage());

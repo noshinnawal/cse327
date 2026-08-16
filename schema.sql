@@ -3,7 +3,10 @@ USE nosh_softdev;
 
 CREATE TABLE IF NOT EXISTS certificates (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    hash VARCHAR(64) NOT NULL UNIQUE,
+    document_hash VARCHAR(64) NOT NULL,
+    previous_hash VARCHAR(64) DEFAULT NULL UNIQUE,
+    record_hash VARCHAR(64) NOT NULL,
+    is_revoked BOOLEAN NOT NULL DEFAULT 0,
     student_name VARCHAR(255) NOT NULL,
     degree VARCHAR(255) NOT NULL,
     institution VARCHAR(255) NOT NULL,
@@ -29,8 +32,8 @@ CREATE TABLE IF NOT EXISTS institutions (
 CREATE TABLE IF NOT EXISTS audit_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     institution VARCHAR(255) DEFAULT NULL,
-    action ENUM('issue','verify','delete','login','login_failed') NOT NULL,
-    hash VARCHAR(64) DEFAULT NULL,
+    action ENUM('issue','verify','revoke','login','login_failed') NOT NULL,
+    document_hash VARCHAR(64) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

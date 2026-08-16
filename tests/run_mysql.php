@@ -51,17 +51,17 @@ try {
 
     // 1. Real UNIQUE constraint semantics (SQLite and MySQL agree, but prove it).
     $pdf = temp_upload('%PDF-MYSQL-UNIQUE-TEST-' . $unique);
-    $hash = pdf_hash($pdf);
-    ledger_insert($pdo, $hash, 'MySQL Test', 'BSc', 'North South University', '2026-01-01');
+    $document_hash = pdf_hash($pdf);
+    ledger_insert($pdo, $document_hash, 'MySQL Test', 'BSc', 'North South University', '2026-01-01');
     try {
-        ledger_insert($pdo, $hash, 'MySQL Test', 'BSc', 'North South University', '2026-01-01');
-        check(false, 'duplicate issuance rejected by MySQL UNIQUE(hash)');
+        ledger_insert($pdo, $document_hash, 'MySQL Test', 'BSc', 'North South University', '2026-01-01');
+        check(false, 'duplicate issuance rejected by MySQL UNIQUE(document_hash)');
     } catch (PDOException $e) {
-        check($e->getCode() == 23000, 'duplicate issuance rejected by MySQL UNIQUE(hash)');
+        check($e->getCode() == 23000, 'duplicate issuance rejected by MySQL UNIQUE(document_hash)');
     }
 
     // 2. Verify round-trip.
-    $found = ledger_find_by_hash($pdo, $hash);
+    $found = ledger_find_by_document_hash($pdo, $document_hash);
     check($found !== false && $found['student_name'] === 'MySQL Test', 'find_by_hash round-trips on MySQL');
 
     // 3. Delete scoping (institution ownership).
@@ -70,10 +70,10 @@ try {
     $id = (int)$found['id'];
     check(ledger_delete($pdo, $id, 'Brac University') === false, 'cross-institution delete rejected on MySQL');
     check(ledger_delete($pdo, $id, 'North South University') === true, 'owner delete works on MySQL');
-    check(ledger_find_by_hash($pdo, $hash) === false, 'deleted certificate no longer verifies on MySQL');
+    check(ledger_find_by_document_hash($pdo, $document_hash) === false, 'deleted certificate no longer verifies on MySQL');
 
     // 4. Audit log against the real table.
-    check(audit_log($pdo, 'North South University', 'issue', $hash) === true, 'audit_log insert works on MySQL');
+    check(audit_log($pdo, 'North South University', 'issue', $document_hash) === true, 'audit_log insert works on MySQL');
     check((int)$pdo->query('SELECT COUNT(*) FROM audit_log')->fetchColumn() >= 1, 'audit rows exist on MySQL');
 
     // 5. Auth + lockout columns work on MySQL.

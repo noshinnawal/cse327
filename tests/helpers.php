@@ -20,10 +20,10 @@ function boot_sqlite()
 function seed_certificate($pdo, $student_name, $degree, $institution, $issuance_date, $content = 'PDF-CONTENT')
 {
     $path = temp_upload($content);
-    $hash = pdf_hash($path);
-    ledger_insert($pdo, $hash, $student_name, $degree, $institution, $issuance_date);
+    $document_hash = pdf_hash($path);
+    ledger_insert($pdo, $document_hash, $student_name, $degree, $institution, $issuance_date);
     unlink($path);
-    return $hash;
+    return $document_hash;
 }
 
 function temp_upload($content = 'PDF-CONTENT')

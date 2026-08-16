@@ -200,7 +200,7 @@ $institution = current_institution();
                             Certificate Issued
                         </h3>
                         <div class="result-item">${data.message || 'Certificate has been securely registered in the ledger.'}</div>
-                        ${data.hash ? `<div class="result-item"><span>Hash:</span> <code class="mono">${data.hash}</code></div>` : ''}
+                        ${data.document_hash ? `<div class="result-item"><span>Hash:</span> <code class="mono">${data.document_hash}</code></div>` : ''}
                     `;
                     form.reset();
                     document.getElementById('issuance_date').valueAsDate = new Date();

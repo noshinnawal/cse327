@@ -50,16 +50,16 @@ if (!($dateCheck instanceof DateTime) || $dateCheck->format('Y-m-d') !== $issuan
 }
 
 $tmp_path = $_FILES['certificate']['tmp_name'];
-$hash = pdf_hash($tmp_path);
+$document_hash = pdf_hash($tmp_path);
 
 try {
-    ledger_insert($pdo, $hash, $student_name, $degree, $institution, $issuance_date);
-    audit_log($pdo, $institution, 'issue', $hash);
+    ledger_insert($pdo, $document_hash, $student_name, $degree, $institution, $issuance_date);
+    audit_log($pdo, $institution, 'issue', $document_hash);
 
     // Immediately delete the uploaded file
     unlink($tmp_path);
 
-    echo json_encode(['status' => 'success', 'message' => 'Certificate issued successfully.', 'hash' => $hash]);
+    echo json_encode(['status' => 'success', 'message' => 'Certificate issued successfully.', 'document_hash' => $document_hash]);
 } catch (\PDOException $e) {
     // Cleanup on error
     @unlink($tmp_path);

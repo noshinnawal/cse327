@@ -25,14 +25,14 @@ if ($uploadError !== null) {
 }
 
 $tmp_path = $_FILES['certificate']['tmp_name'];
-$hash = pdf_hash($tmp_path);
+$document_hash = pdf_hash($tmp_path);
 
 // Immediately delete the uploaded file
 unlink($tmp_path);
 
 try {
-    $result = ledger_find_by_hash($pdo, $hash);
-    audit_log($pdo, null, 'verify', $hash);
+    $result = ledger_find_by_document_hash($pdo, $document_hash);
+    audit_log($pdo, null, 'verify', $document_hash);
 
     if ($result) {
         echo json_encode([

@@ -32,8 +32,10 @@ function test_NFR06_verify_handler_boots_cleanly()
     assert_true($code === 0, 'verify_handler.php boots without fatal error (exit ' . $code . ')');
 }
 
-function test_NFR06_delete_handler_boots_cleanly()
+function test_NFR06_revoke_handler_boots_cleanly()
 {
-    [$code, $output] = boot_handler('delete_handler.php');
-    assert_true($code === 0, 'delete_handler.php boots without fatal error (exit ' . $code . ')');
+    [$code, $output] = boot_handler('revoke_handler.php');
+    assert_true($code === 0, 'revoke_handler.php boots without fatal error (exit ' . $code . ')');
 }
+
+

@@ -21,13 +21,13 @@ traceable to an automated test (see the traceability section at the end).
 |----|-------------|
 | FR-01 | The system must let an institution register with name, location, email, website, representative details and a password of at least 8 characters. New accounts start with `pending` status and cannot log in until activated. |
 | FR-02 | The system must authenticate active institutions by name + bcrypt password. Pending accounts, unknown institutions, and wrong passwords must be rejected. |
-| FR-03 | A logged-in registrar must be able to issue a certificate: upload a PDF, have it SHA-256 hashed, and recorded in the ledger with student name, degree, and issuance date. Issuing the same PDF twice must be rejected (unique hash). |
-| FR-04 | Any visitor must be able to verify a PDF: the system hashes the upload and returns the certificate metadata if the hash exists in the ledger, or a tamper alert if it does not. |
-| FR-05 | A registrar must be able to view, search (by student name or degree) and sort (by date or name) only their own institution's certificates, and delete a certificate to correct issuance mistakes. Deleted certificates must no longer verify and the same PDF may be re-issued. |
-| FR-06 | The system must record an audit log entry for issue, verify, delete, and login events. Audit logging must never break the main flows. |
+| FR-03 | A logged-in registrar must be able to issue a certificate: upload a PDF, have it SHA-256 hashed, and recorded in the blockchain ledger linked to the previous record with student name, degree, and issuance date. Issuing the same PDF twice must be rejected (unique document hash). |
+| FR-04 | Any visitor must be able to verify a PDF: the system hashes the upload, verifies its blockchain link, and returns the certificate metadata if valid, or a tamper alert if the link is broken or revoked. |
+| FR-05 | A registrar must be able to view, search (by student name or degree) and sort (by date or name) only their own institution's certificates, and revoke a certificate to correct issuance mistakes. Revoked certificates must no longer verify, but remain in the ledger to preserve blockchain integrity. |
+| FR-06 | The system must record an audit log entry for issue, verify, revoke, and login events. Audit logging must never break the main flows. |
 | FR-07 | After 5 consecutive failed logins, the account must be locked for 15 minutes. |
 | FR-08 | Uploads must be validated server-side: only PDF files (verified by `%PDF` magic bytes) up to 5 MB are accepted. |
-| FR-09 | Every state-changing request (login, register, issue, verify, delete) must carry a session-bound CSRF token validated with `hash_equals`. |
+| FR-09 | Every state-changing request (login, register, issue, verify, revoke) must carry a session-bound CSRF token validated with `hash_equals`. |
 | FR-10 | Certificate data returned for public display must be HTML-escaped so stored values cannot inject markup (XSS defense). |
 
 ## Non-Functional Requirements
@@ -72,12 +72,12 @@ traceable to an automated test (see the traceability section at the end).
 | Field | Value |
 |-------|-------|
 | Use-case Number | B.327.3 |
-| Event (Stimulus) | Registrar opens the certificate list or deletes an entry |
+| Event (Stimulus) | Registrar opens the certificate list or revokes an entry |
 | Actors | Registrar (primary) |
-| Overview | Registrar searches, sorts, and deletes own certificates |
+| Overview | Registrar searches, sorts, and revokes own certificates |
 | Related Use-cases | UC-2 |
-| Typical Process | 1. Registrar opens `view_certs.php` 2. Searches by name/degree and sorts 3. Optionally deletes a certificate (with confirmation) 4. System removes the row and writes an audit entry |
-| Exceptions | Deleting another institution's certificate → rejected; CSRF token missing → 403 |
+| Typical Process | 1. Registrar opens `view_certs.php` 2. Searches by name/degree and sorts 3. Optionally revokes a certificate (with confirmation) 4. System marks the row as revoked and writes an audit entry |
+| Exceptions | Revoking another institution's certificate → rejected; CSRF token missing → 403 |
 
 ### UC-4: Institution Login
 

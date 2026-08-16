@@ -1,6 +1,9 @@
 CREATE TABLE certificates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    hash TEXT NOT NULL UNIQUE,
+    document_hash TEXT NOT NULL,
+    previous_hash TEXT DEFAULT NULL UNIQUE,
+    record_hash TEXT NOT NULL,
+    is_revoked INTEGER NOT NULL DEFAULT 0,
     student_name TEXT NOT NULL,
     degree TEXT NOT NULL,
     institution TEXT NOT NULL,
@@ -26,8 +29,8 @@ CREATE TABLE institutions (
 CREATE TABLE audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     institution TEXT,
-    action TEXT NOT NULL CHECK (action IN ('issue', 'verify', 'delete', 'login', 'login_failed')),
-    hash TEXT,
+    action TEXT NOT NULL CHECK (action IN ('issue', 'verify', 'revoke', 'login', 'login_failed')),
+    document_hash TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -113,6 +113,7 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
                             <th>Degree</th>
                             <th>Issue Date</th>
                             <th>Hash</th>
+                            <th>Status</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -123,15 +124,27 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
                                 <td class="strong"><?= htmlspecialchars($cert['student_name']) ?></td>
                                 <td><?= htmlspecialchars($cert['degree']) ?></td>
                                 <td><?= htmlspecialchars($cert['issuance_date']) ?></td>
-                                <td><span class="mono"><?= htmlspecialchars(substr($cert['hash'], 0, 16)) ?>…</span></td>
+                                <td><span class="mono"><?= htmlspecialchars(substr($cert['document_hash'], 0, 16)) ?>…</span></td>
+                                <td>
+                                    <?php if ($cert['is_revoked']): ?>
+                                        <span class="badge danger">Revoked</span>
+                                    <?php else: ?>
+                                        <span class="badge success">Active</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="actions-cell">
-                                    <button type="button" class="btn btn-danger sm delete-btn" data-id="<?= (int)$cert['id'] ?>">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"/>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                        </svg>
-                                        Delete
-                                    </button>
+                                    <?php if (!$cert['is_revoked']): ?>
+                                        <button type="button" class="btn btn-danger sm revoke-btn" data-id="<?= (int)$cert['id'] ?>">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            </svg>
+                                            Revoke
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" class="btn btn-ghost sm" disabled>Revoked</button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -143,16 +156,17 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
 
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
-            <h3 id="modalTitle">Delete this certificate?</h3>
-            <p id="modalBody">This will permanently remove the certificate from the ledger. It will no longer verify for future employer checks, and the same PDF can be re-registered afterwards.</p>
+            <h3 id="modalTitle">Revoke this certificate?</h3>
+            <p id="modalBody">This will softly delete the certificate by marking it as revoked. It will no longer verify for future employer checks, but remains in the blockchain ledger.</p>
             <div class="modal-buttons">
                 <button type="button" class="btn btn-secondary" id="confirmCancel">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">
+                <button type="button" class="btn btn-danger" id="confirmRevoke">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
                     </svg>
-                    Delete Certificate
+                    Revoke Certificate
                 </button>
             </div>
         </div>
@@ -160,11 +174,11 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
 
     <script>
         const overlay = document.getElementById('modalOverlay');
-        let deleteId = null;
+        let revokeId = null;
 
-        document.querySelectorAll('.delete-btn').forEach(btn => {
+        document.querySelectorAll('.revoke-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                deleteId = btn.dataset.id;
+                revokeId = btn.dataset.id;
                 overlay.classList.add('show');
             });
         });
@@ -176,12 +190,12 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
 
         function closeModal() {
             overlay.classList.remove('show');
-            deleteId = null;
+            revokeId = null;
         }
 
-        document.getElementById('confirmDelete').addEventListener('click', async () => {
-            if (!deleteId) return;
-            const btn = document.getElementById('confirmDelete');
+        document.getElementById('confirmRevoke').addEventListener('click', async () => {
+            if (!revokeId) return;
+            const btn = document.getElementById('confirmRevoke');
             btn.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
                     <line x1="12" y1="2" x2="12" y2="6"/>
@@ -193,17 +207,17 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
                     <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
                     <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
                 </svg>
-                Deleting...
+                Revoking...
             `;
             btn.disabled = true;
             
-            const response = await fetch('delete_handler.php', {
+            const response = await fetch('revoke_handler.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: 'id=' + encodeURIComponent(deleteId)
+                body: 'id=' + encodeURIComponent(revokeId)
             });
             const data = await response.json();
             closeModal();
@@ -213,13 +227,14 @@ $certificates = ledger_search($pdo, $institution, $q, $sort);
             } else {
                 btn.innerHTML = `
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
                     </svg>
-                    Delete Certificate
+                    Revoke Certificate
                 `;
                 btn.disabled = false;
-                alert(data.message || 'Delete failed.');
+                alert(data.message || 'Revoke failed.');
             }
         });
         
