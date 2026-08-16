@@ -1,7 +1,7 @@
 # Requirements Specification
 
 Course: CSE327 — Software Engineering
-Project: Block327 — Localized Academic Certificate Verification System
+Project: Checkr — Localized Academic Certificate Verification System
 
 Requirements engineering (Lec 6): functional requirements state the services the system
 provides; non-functional requirements constrain those services. Every requirement below is

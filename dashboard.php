@@ -8,9 +8,9 @@ $institution = current_institution();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issuance Dashboard | Block327</title>
+    <title>Issuance Dashboard | Checkr</title>
     <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="stylesheet" href="style.css?v=<?= filemtime('style.css') ?>">
     <script>
         // Prevent flash of wrong theme
         (function() {
@@ -24,7 +24,7 @@ $institution = current_institution();
 <body>
     <nav class="topbar">
         <div class="topbar-inner">
-            <a href="index.php" class="brand">Block327</a>
+            <a href="index.php" class="brand">Checkr</a>
             <div class="nav-actions">
                 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                     <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -80,11 +80,12 @@ $institution = current_institution();
             <div class="form-group">
                 <label>Certificate File</label>
                 <div class="drop-zone" id="dropZone">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="12" y1="12" x2="12" y2="18"/>
+                    <polyline points="9 15 12 18 15 15"/>
+                </svg>
                     <span id="fileName">Drag and drop the certificate PDF here or click to browse</span>
                     <input type="file" id="certificate" name="certificate" accept="application/pdf" required>
                 </div>

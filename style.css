@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
     /* Color Palette - Pearl Beige, Ash Brown, Pink Orchid, Charcoal Blue */
@@ -92,7 +92,7 @@ body {
 }
 
 .brand {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'Manrope', sans-serif;
     font-weight: 700;
     font-size: 22px;
     letter-spacing: -0.01em;
@@ -246,23 +246,6 @@ body {
     position: relative;
 }
 
-.container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--charcoal-blue), var(--pink-orchid), var(--pearl-beige));
-    border-radius: 16px 16px 0 0;
-    opacity: 0;
-    transition: opacity var(--transition-normal);
-}
-
-.container:hover::before {
-    opacity: 1;
-}
-
 .container.wide {
     max-width: 960px;
 }
@@ -279,7 +262,7 @@ body {
 }
 
 h1 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'Manrope', sans-serif;
     font-weight: 700;
     font-size: 32px;
     margin-bottom: 12px;
@@ -298,6 +281,10 @@ p.subtitle {
     max-width: 480px;
     margin-left: auto;
     margin-right: auto;
+}
+
+.h1-hero {
+    font-size: 38px;
 }
 
 p.subtitle strong {
@@ -338,7 +325,8 @@ p.subtitle strong {
 .drop-zone svg {
     width: 52px;
     height: 52px;
-    fill: var(--charcoal-blue);
+    fill: none;
+    color: var(--charcoal-blue);
     margin-bottom: 20px;
     opacity: 0.7;
     transition: all var(--transition-normal);
@@ -393,12 +381,7 @@ p.subtitle strong {
 }
 
 select.input {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236B6560' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    background-size: 18px;
-    padding-right: 44px;
+    padding-right: 14px;
 }
 
 /* Toolbar (search / sort) */
@@ -661,7 +644,7 @@ td.strong {
 }
 
 .modal h3 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 20px;
     font-weight: 700;
     margin-bottom: 12px;
@@ -716,6 +699,10 @@ td.strong {
     
     h1 {
         font-size: 26px;
+    }
+    
+    .h1-hero {
+        font-size: 30px;
     }
     
     .toolbar {
@@ -1122,14 +1109,6 @@ tbody tr:hover::before {
     border-color: var(--border);
 }
 
-[data-theme="dark"] .container::before {
-    opacity: 0;
-}
-
-[data-theme="dark"] .container:hover::before {
-    opacity: 0.5;
-}
-
 [data-theme="dark"] .drop-zone {
     background: var(--surface-muted);
     border-color: var(--border);
@@ -1155,10 +1134,6 @@ tbody tr:hover::before {
 
 [data-theme="dark"] .input::placeholder {
     color: var(--text-light);
-}
-
-[data-theme="dark"] select.input {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23A09890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 [data-theme="dark"] .toolbar {
@@ -1415,10 +1390,6 @@ tbody tr:hover::before {
     :root:not([data-theme="light"]) .input {
         background: var(--surface-muted);
         border-color: var(--border);
-    }
-    
-    :root:not([data-theme="light"]) select.input {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23A09890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     }
     
     :root:not([data-theme="light"]) .toolbar {

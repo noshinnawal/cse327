@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Institution | Block327</title>
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <title>Register Institution | Checkr</title>
+    <link rel="stylesheet" href="style.css?v=<?= filemtime('style.css') ?>">
     <script>
         // Prevent flash of wrong theme
         (function() {
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <nav class="topbar">
         <div class="topbar-inner">
-            <a href="index.php" class="brand">Block327</a>
+            <a href="index.php" class="brand">Checkr</a>
             <div class="nav-actions">
                 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                     <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -146,10 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <button type="submit" class="btn btn-primary btn-block">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="8.5" cy="7" r="4"/>
-                    <line x1="20" y1="8" x2="20" y2="14"/>
-                    <line x1="23" y1="11" x2="17" y2="11"/>
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="9 12.5 11 14.5 15 10.5"/>
                 </svg>
                 Register Institution
             </button>

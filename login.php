@@ -41,8 +41,8 @@ $institutions = active_institutions();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Institution Login | Block327</title>
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <title>Institution Login | Checkr</title>
+    <link rel="stylesheet" href="style.css?v=<?= filemtime('style.css') ?>">
     <script>
         // Prevent flash of wrong theme
         (function() {
@@ -56,7 +56,7 @@ $institutions = active_institutions();
 <body>
     <nav class="topbar">
         <div class="topbar-inner">
-            <a href="index.php" class="brand">Block327</a>
+            <a href="index.php" class="brand">Checkr</a>
             <div class="nav-actions">
                 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                     <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -140,12 +140,6 @@ $institutions = active_institutions();
         <p class="tool-help">
             <strong>New here?</strong><br>
             <a href="register.php" class="link">Register your institution</a>
-        </p>
-
-        <p class="tool-help">
-            <strong>Demo Credentials</strong><br>
-            North South University: <code>nosh327</code><br>
-            Brac University: <code>brac327</code>
         </p>
     </div>
     <script>
