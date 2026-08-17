@@ -909,25 +909,8 @@ tbody tr:nth-child(10) { animation-delay: 0.5s; }
 }
 
 /* Table row hover effect */
-tbody tr {
-    position: relative;
-}
-
-tbody tr::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--charcoal-blue);
-    opacity: 0;
-    transition: opacity var(--transition-fast);
-    border-radius: 0 2px 2px 0;
-}
-
-tbody tr:hover::before {
-    opacity: 1;
+tbody tr:hover td:first-child {
+    box-shadow: inset 3px 0 0 var(--charcoal-blue);
 }
 
 /* Badge hover effect */
@@ -1161,8 +1144,8 @@ tbody tr:hover::before {
     background: var(--surface-warm);
 }
 
-[data-theme="dark"] tbody tr::before {
-    background: var(--primary);
+[data-theme="dark"] tbody tr:hover td:first-child {
+    box-shadow: inset 3px 0 0 var(--primary);
 }
 
 [data-theme="dark"] .badge {

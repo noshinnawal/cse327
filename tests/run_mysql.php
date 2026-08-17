@@ -64,13 +64,14 @@ try {
     $found = ledger_find_by_document_hash($pdo, $document_hash);
     check($found !== false && $found['student_name'] === 'MySQL Test', 'find_by_hash round-trips on MySQL');
 
-    // 3. Delete scoping (institution ownership).
+    // 3. Revoke scoping (institution ownership).
     // Use the id from the SELECTed row: PDO::lastInsertId() is reset by any
     // intervening SELECT on MariaDB, so it must never be relied on here.
     $id = (int)$found['id'];
-    check(ledger_delete($pdo, $id, 'Brac University') === false, 'cross-institution delete rejected on MySQL');
-    check(ledger_delete($pdo, $id, 'North South University') === true, 'owner delete works on MySQL');
-    check(ledger_find_by_document_hash($pdo, $document_hash) === false, 'deleted certificate no longer verifies on MySQL');
+    check(ledger_revoke($pdo, $id, 'Brac University') === false, 'cross-institution revoke rejected on MySQL');
+    check(ledger_revoke($pdo, $id, 'North South University') === true, 'owner revoke works on MySQL');
+    $revoked = ledger_find_by_document_hash($pdo, $document_hash);
+    check($revoked !== false && (int)$revoked['is_revoked'] === 1, 'revoked certificate is marked revoked on MySQL');
 
     // 4. Audit log against the real table.
     check(audit_log($pdo, 'North South University', 'issue', $document_hash) === true, 'audit_log insert works on MySQL');
